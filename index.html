@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How CDNs Make the Web Fast - ENEB352 Final - Kian Kamali</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
@@ -29,6 +30,8 @@ html, body {
   width: 100vw;
   height: 100vh;
   -webkit-font-smoothing: antialiased;
+  cursor: pointer;
+  user-select: none;
 }
 
 /* Slide System */
@@ -89,12 +92,13 @@ html, body {
 .globe-arc {
   fill: none;
   stroke: var(--peach);
-  stroke-width: 1.5;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-dasharray: 200;
   stroke-dashoffset: 200;
+  filter: drop-shadow(0 0 7px rgba(255,122,102,0.55));
 }
-.globe-pop { fill: var(--amber); }
+.globe-pop { fill: var(--amber); transform-box: fill-box; transform-origin: center; }
 
 /* Typography */
 .display {
@@ -187,6 +191,11 @@ html, body {
 
 /* Layouts */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+.two-col:has(.terminal) {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.95fr);
+  gap: 64px;
+  align-items: center;
+}
 .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
 
 /* Cards */
@@ -254,8 +263,10 @@ html, body {
   font-size: 13px;
   line-height: 1.7;
   color: var(--peach);
-  overflow-x: auto;
+  overflow: hidden;
   min-height: 200px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,201,160,0.08);
+  white-space: nowrap;
 }
 .terminal .cursor {
   display: inline-block;
@@ -269,6 +280,17 @@ html, body {
 .terminal .keyword { color: var(--coral); }
 .terminal .string { color: var(--amber); }
 .terminal .prompt { color: var(--amber); }
+.terminal::before {
+  content: "cdn-edge:~";
+  display: block;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,201,160,0.1);
+  color: var(--dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
 
 /* Cache tiers */
 .cache-tier {
@@ -494,7 +516,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
           <span class="word">How</span> <span class="word">CDNs</span> <span class="word">Make</span> <span class="word">the</span> <span class="word">Web</span> <span class="word accent-text">Fast</span>
         </h1>
         <p class="subtitle" id="sub-1">
-          From 200ms round-trips to 20ms edge responses. The engineering behind global content delivery: DNS, Anycast, HTTP/3, and the cache hierarchy that powers the modern web.
+          CDNs make websites faster by moving content closer to the user. This presentation explains how DNS, Anycast, HTTP/3, and cache layers work together to reduce delay.
         </p>
         <div class="hero-cta" style="margin-top: 32px; display: flex; gap: 16px; align-items: center;">
           <span class="mono">Click or press Space to advance</span>
@@ -604,7 +626,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
     <div class="two-col" style="margin-top: 40px;">
       <div>
         <p class="body-text" style="margin-bottom: 16px;">
-          CDNs orchestrate multiple networking protocols across the OSI stack. At the network and transport layers, we have IP Anycast, BGP for routing, TCP with BBR congestion control, and UDP for QUIC.
+          A CDN uses several protocols together to move web content closer to the user. IP Anycast and BGP help choose the nearest edge server, while TCP, UDP, TLS, and HTTP handle the actual connection and data transfer.
         </p>
         <p class="body-text">
           At the application layer, DNS resolves names to IPs, HTTP delivers content, and TLS encrypts everything. As we studied in Kurose and Ross Chapter 2, these protocols work together to deliver web content efficiently.
@@ -625,11 +647,11 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
       <div>
         <div class="card" style="margin-bottom: 12px;">
           <div class="card-title">Layer 3-4: Routing & Transport</div>
-          <div class="card-text">Anycast IP + BGP route users to the nearest Point of Presence. TCP BBR optimizes throughput.</div>
+          <div class="card-text">Anycast IP and BGP route users to a nearby Point of Presence. TCP congestion control helps the connection use available bandwidth without overwhelming the path.</div>
         </div>
         <div class="card">
           <div class="card-title">Layer 5-7: Application</div>
-          <div class="card-text">HTTP/3 over QUIC eliminates head-of-line blocking. TLS 1.3 with 0-RTT cuts handshake latency to zero.</div>
+          <div class="card-text">HTTP/3 runs over QUIC, which uses UDP and separates streams better during packet loss. TLS 1.3 also reduces handshake delay, especially on repeat visits.</div>
         </div>
       </div>
     </div>
@@ -652,8 +674,8 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
           Anycast means hundreds of servers share the same IP. BGP routing directs your packet to the closest server based on network topology. If a PoP fails, traffic reroutes automatically.
         </p>
         <div class="protocol-list">
-          <span class="protocol-badge">Cloudflare: 300+ PoPs</span>
-          <span class="protocol-badge">Akamai: 4,000+ edges</span>
+          <span class="protocol-badge">Cloudflare: hundreds of cities</span>
+          <span class="protocol-badge">Akamai: 4,400+ edge PoPs</span>
         </div>
       </div>
       <div class="terminal" id="terminal-4">
@@ -705,7 +727,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
         <tr>
           <td>Handshake RTTs</td>
           <td>2-3</td>
-          <td>2-3</td>
+          <td>1-2</td>
           <td><strong style="color: var(--amber);">0-1</strong></td>
         </tr>
         <tr>
@@ -722,7 +744,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
         </tr>
       </table>
       <p class="body-text" style="margin-top: 20px;">
-        HTTP/3 uses QUIC over UDP instead of TCP. This eliminates head-of-line blocking at the transport layer. On mobile networks with high packet loss, this cuts page load times by 30-50%.
+        HTTP/3 uses QUIC over UDP instead of TCP. This helps because packet loss on one stream does not block every other stream the same way TCP can. On mobile or lossy networks, that can reduce delay and make page loading feel smoother.
       </p>
     </div>
   </div>
@@ -882,31 +904,31 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
     <div class="two-col" style="margin-top: 40px;">
       <div>
         <p class="body-text" style="margin-bottom: 16px;">
-          Cloudflare operates 300+ Points of Presence across 100+ countries, processing 55 million HTTP requests per second. They handle approximately 25% of all web traffic.
+          Cloudflare runs a global network across hundreds of cities in 100+ countries. The important idea is that user traffic is handled at the closest Cloudflare data center instead of being sent all the way back to the origin server.
         </p>
         <div class="three-col" style="margin-top: 20px;">
           <div class="stat-block">
+            <div class="stat-number" data-count="100">0</div>
+            <div class="stat-label">+ countries</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-number" data-count="13">0</div>
+            <div class="stat-label">K+ networks</div>
+          </div>
+          <div class="stat-block">
             <div class="stat-number" data-count="300">0</div>
-            <div class="stat-label">PoPs</div>
-          </div>
-          <div class="stat-block">
-            <div class="stat-number" data-count="55">0</div>
-            <div class="stat-label">M req/s</div>
-          </div>
-          <div class="stat-block">
-            <div class="stat-number" data-count="25">0</div>
-            <div class="stat-label">% of Web</div>
+            <div class="stat-label">+ cities</div>
           </div>
         </div>
       </div>
       <div>
         <div class="card" style="margin-bottom: 12px;">
           <div class="card-title">Workers</div>
-          <div class="card-text">V8 isolates running at every edge location. Deploy JavaScript globally in 30 seconds. No cold starts.</div>
+          <div class="card-text">Workers run JavaScript in V8 isolates near users. This lets small application logic run at the edge instead of always going back to a central server.</div>
         </div>
         <div class="card" style="margin-bottom: 12px;">
           <div class="card-title">R2 Storage</div>
-          <div class="card-text">S3-compatible object storage with zero egress fees. Competes with AWS S3 at 1/10th the cost.</div>
+          <div class="card-text">R2 is S3-compatible object storage with no egress fees. It is useful when a site serves a lot of stored files through the CDN.</div>
         </div>
         <div class="card">
           <div class="card-title">DDoS Mitigation</div>
@@ -934,7 +956,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
         </tr>
         <tr>
           <td><strong style="color: var(--coral);">Akamai</strong></td>
-          <td>4,000+</td>
+          <td>4,400+</td>
           <td>Enterprise, media streaming</td>
           <td>Apple, Adobe, Airbnb</td>
         </tr>
@@ -946,7 +968,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
         </tr>
         <tr>
           <td><strong style="color: var(--coral);">Cloudflare</strong></td>
-          <td>300+</td>
+          <td>Hundreds of cities</td>
           <td>Security + performance + dev tools</td>
           <td>Discord, Zendesk, IBM</td>
         </tr>
@@ -958,7 +980,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
         </tr>
       </table>
       <p class="body-text" style="margin-top: 24px;">
-        Fastly differentiates with instant config propagation (150ms globally). Akamai dominates media delivery with Adaptive Bitrate Streaming. CloudFront integrates deeply with AWS services. Each provider serves different use cases.
+        Fastly focuses on programmable edge control and fast configuration changes. Akamai has the largest edge footprint and is strong for media delivery. CloudFront is strongest when a project is already built around AWS services.
       </p>
     </div>
   </div>
@@ -975,7 +997,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
       <div>
         <div class="card" style="margin-bottom: 12px;">
           <div class="card-title">Latency Win</div>
-          <div class="card-text">CDNs cut latency from 200ms to 20ms, a 10x improvement. But edge compute adds cost per request.</div>
+          <div class="card-text">A CDN can reduce a long-distance request from hundreds of milliseconds to a much shorter local edge request. The trade-off is that advanced edge compute can add cost per request.</div>
         </div>
         <div class="card" style="margin-bottom: 12px;">
           <div class="card-title">Cost Trade-off</div>
@@ -1197,6 +1219,9 @@ let isQueueAnimating = false;
 let animationQueue = [];
 let currentQueueIndex = 0;
 let visitedSlides = new Set();
+let queueTimeout = null;
+const terminalTimers = new WeakMap();
+const ANIMATED_SELECTOR = '.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .comparison-table tr, .protocol-badge, .reference-list li, .stat-number[data-count], .stat-label, .terminal';
 
 function initSlides() {
   for (let i = 1; i <= totalSlides; i++) {
@@ -1210,6 +1235,82 @@ function initSlides() {
     }
   }
   visitedSlides.add(1);
+  resetSlideAnimationState(document.getElementById('slide-1'));
+}
+
+function getSlideTerminals(slide) {
+  return Array.from(slide.querySelectorAll('.terminal'));
+}
+
+function prepareTerminal(term) {
+  if (!term.dataset.originalHtml) {
+    term.dataset.originalHtml = term.innerHTML;
+  }
+}
+
+function cancelTerminalTyping(slide) {
+  getSlideTerminals(slide).forEach(term => {
+    const timer = terminalTimers.get(term);
+    if (timer) clearTimeout(timer);
+    terminalTimers.delete(term);
+    term.dataset.typing = 'false';
+  });
+}
+
+function resetTerminal(term) {
+  prepareTerminal(term);
+  const timer = terminalTimers.get(term);
+  if (timer) clearTimeout(timer);
+  terminalTimers.delete(term);
+  term.dataset.typing = 'false';
+  term.innerHTML = '';
+}
+
+function toArray(targets) {
+  return Array.from(targets || []);
+}
+
+function setIfPresent(targets, vars) {
+  const arr = toArray(targets);
+  if (arr.length > 0) gsap.set(arr, vars);
+}
+
+function killIfPresent(targets) {
+  const arr = toArray(targets);
+  if (arr.length > 0) gsap.killTweensOf(arr);
+}
+
+function resetSlideAnimationState(slide) {
+  if (!slide) return;
+  cancelTerminalTyping(slide);
+  killIfPresent(slide.querySelectorAll(ANIMATED_SELECTOR));
+  setIfPresent(slide.querySelectorAll('.word'), { opacity: 0, filter: 'blur(8px)', y: 20 });
+  setIfPresent(slide.querySelectorAll('.subtitle'), { opacity: 0, y: 15 });
+  setIfPresent(slide.querySelectorAll('.body-text'), { opacity: 0, y: 10 });
+  setIfPresent(slide.querySelectorAll('.card'), { opacity: 0, y: 30 });
+  setIfPresent(slide.querySelectorAll('.card-text'), { opacity: 0, y: 8 });
+  setIfPresent(slide.querySelectorAll('.cache-tier'), { opacity: 0, x: -20 });
+  setIfPresent(slide.querySelectorAll('.cache-tier-desc'), { opacity: 0 });
+  setIfPresent(slide.querySelectorAll('.comparison-table tr'), { opacity: 0, x: -15 });
+  setIfPresent(slide.querySelectorAll('.protocol-badge'), { opacity: 0, scale: 0.8 });
+  setIfPresent(slide.querySelectorAll('.reference-list li'), { opacity: 0, x: -10 });
+  setIfPresent(slide.querySelectorAll('.stat-label'), { opacity: 0, y: 5 });
+  setIfPresent(slide.querySelectorAll('.terminal'), { opacity: 0, y: 20 });
+  slide.querySelectorAll('.stat-number[data-count]').forEach(stat => {
+    stat.textContent = '0';
+    gsap.set(stat, { opacity: 0 });
+  });
+  getSlideTerminals(slide).forEach(resetTerminal);
+}
+
+function cancelActiveAnimations(slide) {
+  isQueueAnimating = false;
+  if (queueTimeout) clearTimeout(queueTimeout);
+  queueTimeout = null;
+  if (!slide) return;
+  cancelTerminalTyping(slide);
+  gsap.killTweensOf(slide);
+  killIfPresent(slide.querySelectorAll(ANIMATED_SELECTOR));
 }
 
 function buildAnimationQueue(slideNum) {
@@ -1217,6 +1318,13 @@ function buildAnimationQueue(slideNum) {
   if (!slide) return [];
   
   const queue = [];
+  const terminals = Array.from(slide.querySelectorAll('.terminal'));
+  let terminalQueued = false;
+  const revealTerminalsOnce = () => {
+    if (terminalQueued || terminals.length === 0) return;
+    terminalQueued = true;
+    revealTerminals(terminals);
+  };
   
   const words = slide.querySelectorAll('.title .word, .display .word');
   if (words.length > 0) {
@@ -1239,13 +1347,15 @@ function buildAnimationQueue(slideNum) {
   if (bodyTexts.length > 0) {
     queue.push(() => {
       gsap.fromTo(bodyTexts, { opacity: 0, y: 10 }, { opacity: 0.88, y: 0, duration: 0.6, stagger: 0.15, ease: 'power2.out' });
+      revealTerminalsOnce();
     });
   }
   
   const cards = slide.querySelectorAll('.card');
   if (cards.length > 0) {
     queue.push(() => {
-      gsap.fromTo(cards, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' });
+      gsap.fromTo(cards, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out', onComplete: () => gsap.set(cards, { clearProps: 'transform' }) });
+      if (bodyTexts.length === 0) revealTerminalsOnce();
     });
   }
   
@@ -1314,13 +1424,9 @@ function buildAnimationQueue(slideNum) {
     });
   }
   
-  const terminals = slide.querySelectorAll('.terminal');
-  if (terminals.length > 0) {
+  if (terminals.length > 0 && bodyTexts.length === 0 && cards.length === 0) {
     queue.push(() => {
-      gsap.fromTo(terminals, 
-        { opacity: 0, y: 20 }, 
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.2, ease: 'power2.out' }
-      );
+      revealTerminalsOnce();
     });
   }
   
@@ -1359,7 +1465,8 @@ function advanceAnimation() {
     currentQueueIndex++;
     updateQueueProgress();
     // Small delay to prevent rapid-fire clicks from stacking
-    setTimeout(() => { isQueueAnimating = false; }, 400);
+    if (queueTimeout) clearTimeout(queueTimeout);
+    queueTimeout = setTimeout(() => { isQueueAnimating = false; }, 500);
     return true;
   }
   return false;
@@ -1372,6 +1479,9 @@ function goToSlide(n) {
   const currentEl = document.getElementById(`slide-${currentSlide}`);
   const nextEl = document.getElementById(`slide-${n}`);
   const direction = n > currentSlide ? 1 : -1;
+  cancelActiveAnimations(currentEl);
+  resetSlideAnimationState(nextEl);
+  if (n === 1) animateGlobeArcs();
   
   gsap.set(nextEl, { y: direction * 100 + 'vh', opacity: 0 });
   nextEl.classList.add('active');
@@ -1382,13 +1492,8 @@ function goToSlide(n) {
       animationQueue = buildAnimationQueue(n);
       currentQueueIndex = 0;
       updateQueueProgress();
-      if (!visitedSlides.has(n)) {
-        visitedSlides.add(n);
-        setTimeout(() => advanceAnimation(), 200);
-      } else {
-        showAllContent(n);
-        updateQueueProgress();
-      }
+      visitedSlides.add(n);
+      setTimeout(() => advanceAnimation(), 200);
     }
   });
   
@@ -1414,9 +1519,14 @@ function goToSlide(n) {
 function showAllContent(slideNum) {
   const slide = document.getElementById(`slide-${slideNum}`);
   if (!slide) return;
+  cancelTerminalTyping(slide);
   const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .comparison-table tr, .protocol-badge, .reference-list li, .stat-label, .terminal');
   allAnimated.forEach(el => {
     gsap.set(el, { opacity: 1, y: 0, x: 0, filter: 'blur(0px)', scale: 1 });
+  });
+  getSlideTerminals(slide).forEach(term => {
+    prepareTerminal(term);
+    term.innerHTML = term.dataset.originalHtml;
   });
   const stats = slide.querySelectorAll('.stat-number[data-count]');
   stats.forEach(stat => {
@@ -1444,8 +1554,7 @@ function updateNav() {
 // Main click handler
 document.addEventListener('click', (e) => {
   if (isAnimating) return;
-  if (e.target.closest('.nav-dot, a, button, input, .terminal')) return;
-  if (window.getSelection().toString().length > 0) return;
+  if (e.target.closest('.nav-dot, a, button, input')) return;
   
   const hadAnimation = advanceAnimation();
   if (!hadAnimation) {
@@ -1527,90 +1636,116 @@ for (let i = 1; i <= totalSlides; i++) {
   navDotsContainer.appendChild(dot);
 }
 
-// Terminal typing effect — line-by-line reveal to preserve HTML tags
-function typeTerminal(id, speed) {
-  const el = document.getElementById(id);
-  if (!el || el.dataset.typing === 'true') return;
-  el.dataset.typing = 'true';
-  const html = el.innerHTML;
-  // Split by <br> tags to get lines
-  const lines = html.split(/<br\s*\/?>/i);
-  el.innerHTML = '';
-  
-  let i = 0;
-  function typeLine() {
-    if (i < lines.length) {
-      if (i > 0) el.innerHTML += '<br>';
-      el.innerHTML += lines[i];
-      i++;
-      setTimeout(typeLine, speed * 3);
+function revealTerminals(terminals) {
+  terminals.forEach((term, index) => {
+    resetTerminal(term);
+    gsap.fromTo(term,
+      { opacity: 0, x: 28, y: 8 },
+      {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        duration: 0.5,
+        delay: index * 0.08,
+        ease: 'power2.out',
+        onComplete: () => typeTerminal(term, 4)
+      }
+    );
+  });
+}
+
+// Terminal typing effect — types text nodes while preserving span colors and line breaks.
+function typeTerminal(term, speed) {
+  if (!term || term.dataset.typing === 'true') return;
+  prepareTerminal(term);
+  term.dataset.typing = 'true';
+  term.innerHTML = '';
+
+  const template = document.createElement('template');
+  template.innerHTML = term.dataset.originalHtml;
+  const steps = [];
+
+  function copyNode(source, targetParent) {
+    if (source.nodeType === Node.TEXT_NODE) {
+      const textNode = document.createTextNode('');
+      targetParent.appendChild(textNode);
+      const chars = source.textContent.split('');
+      chars.forEach(char => steps.push(() => { textNode.textContent += char; }));
+      return;
     }
+
+    if (source.nodeType !== Node.ELEMENT_NODE) return;
+    if (source.classList && source.classList.contains('cursor')) return;
+
+    const clone = source.cloneNode(false);
+    targetParent.appendChild(clone);
+
+    if (source.tagName === 'BR') return;
+    Array.from(source.childNodes).forEach(child => copyNode(child, clone));
   }
-  typeLine();
+
+  Array.from(template.content.childNodes).forEach(node => copyNode(node, term));
+
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  term.appendChild(cursor);
+
+  let i = 0;
+  function tick() {
+    if (i >= steps.length) {
+      term.dataset.typing = 'false';
+      terminalTimers.delete(term);
+      return;
+    }
+    steps[i++]();
+    terminalTimers.set(term, setTimeout(tick, speed));
+  }
+  tick();
 }
 
 // ============================================
 // HERO GLOBE ARCS
 // ============================================
+let globeTl = null;
+
+function stopGlobeArcs() {
+  if (globeTl) globeTl.kill();
+  globeTl = null;
+  gsap.killTweensOf('.globe-arc');
+  gsap.killTweensOf('.globe-pop');
+}
+
 function animateGlobeArcs() {
   const arcs = Array.from(document.querySelectorAll('.globe-arc'));
-  const pops = document.querySelectorAll('.globe-pop');
+  const pops = Array.from(document.querySelectorAll('.globe-pop'));
+  if (arcs.length === 0) return;
+  stopGlobeArcs();
 
   function getDashLength(arc) {
-    return parseFloat(arc.getAttribute('stroke-dasharray')) || 100;
+    return arc.getTotalLength ? arc.getTotalLength() : (parseFloat(arc.getAttribute('stroke-dasharray')) || 100);
   }
 
   function resetArcs() {
     arcs.forEach(arc => {
-      gsap.set(arc, { strokeDashoffset: getDashLength(arc) });
+      const len = getDashLength(arc);
+      arc.setAttribute('stroke-dasharray', len);
+      gsap.set(arc, { strokeDashoffset: len, opacity: 0.9 });
     });
+    gsap.set(pops, { scale: 0.75, opacity: 0.65, transformOrigin: 'center center' });
   }
 
-  function playCycle() {
-    resetArcs();
-
-    const tl = gsap.timeline({
-      onComplete: () => {
-        gsap.delayedCall(1.2, playCycle);
-      }
-    });
-
-    // Phase 1 — Draw K: each arc reveals sequentially
-    arcs.forEach((arc, i) => {
-      tl.to(arc, {
-        strokeDashoffset: 0,
-        duration: 0.3,
-        ease: 'power2.out'
-      }, i * 0.22);
-    });
-
-    // Phase 2 — Hold: fully visible K
-    tl.to({}, { duration: 1.8 });
-
-    // Phase 3 — Undraw K: erase in reverse order
-    [...arcs].reverse().forEach((arc, i) => {
-      tl.to(arc, {
-        strokeDashoffset: getDashLength(arc),
-        duration: 0.18,
-        ease: 'power2.in'
-      }, `+=${i === 0 ? 0 : 0.12}`);
-    });
-  }
-
-  playCycle();
-
-  // Continuous dot pulse (staggered, independent of the draw loop)
-  pops.forEach((pop, i) => {
-    const baseR = parseFloat(pop.getAttribute('r'));
-    gsap.to(pop, {
-      attr: { r: baseR * 1.3 },
-      duration: 0.8,
-      delay: i * 0.15,
-      ease: 'sine.inOut',
-      repeat: -1,
-      yoyo: true
-    });
+  resetArcs();
+  globeTl = gsap.timeline({ repeat: -1, repeatDelay: 0.9, defaults: { ease: 'power2.out' } });
+  globeTl.to(pops, { scale: 1, opacity: 1, duration: 0.25, stagger: 0.04 }, 0);
+  arcs.forEach((arc, i) => {
+    globeTl.to(arc, { strokeDashoffset: 0, duration: 0.34 }, 0.08 + i * 0.16);
   });
+  globeTl.to(pops, { scale: 1.25, duration: 0.35, stagger: { each: 0.04, yoyo: true, repeat: 1 } }, 1.2);
+  globeTl.to({}, { duration: 1.35 });
+  [...arcs].reverse().forEach((arc, i) => {
+    globeTl.to(arc, { strokeDashoffset: getDashLength(arc), duration: 0.22, ease: 'power2.in' }, `+=${i === 0 ? 0 : 0.04}`);
+  });
+  globeTl.to(pops, { scale: 0.75, opacity: 0.65, duration: 0.35, stagger: 0.03 }, '<');
 }
 
 // ============================================
@@ -1619,13 +1754,26 @@ function animateGlobeArcs() {
 const canvas = document.getElementById('bg-canvas');
 const ctx = canvas.getContext('2d');
 let W, H, bgParticles = [], bgStars = [], bgShips = [];
+const mouse = { x: -9999, y: -9999, active: false };
 
 function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.floor(W * dpr);
+  canvas.height = Math.floor(H * dpr);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 resize();
 window.addEventListener('resize', resize);
+window.addEventListener('mousemove', (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  mouse.active = true;
+});
+window.addEventListener('mouseleave', () => { mouse.active = false; });
 
 // Background particles (200)
 for (let i = 0; i < 200; i++) {
@@ -1635,7 +1783,8 @@ for (let i = 0; i < 200; i++) {
     vx: (Math.random() - 0.5) * 0.3,
     vy: (Math.random() - 0.5) * 0.3,
     size: Math.random() * 2 + 0.5,
-    color: ['#FF7A66', '#FFC9A0', '#E8A04E', '#FCEEE6'][Math.floor(Math.random() * 4)]
+    color: ['#FF7A66', '#FFC9A0', '#E8A04E', '#FCEEE6'][Math.floor(Math.random() * 4)],
+    pulse: Math.random() * Math.PI * 2
   });
 }
 
@@ -1655,10 +1804,11 @@ for (let i = 0; i < 3; i++) {
   bgShips.push({
     x: Math.random() * W,
     y: Math.random() * H,
-    speed: 0.2 + Math.random() * 0.3,
-    size: 4 + Math.random() * 3,
+    speed: 0.38 + Math.random() * 0.52,
+    size: 10 + Math.random() * 8,
     color: ['#FF7A66', '#E8A04E'][Math.floor(Math.random() * 2)],
-    dir: Math.random() < 0.5 ? 1 : -1
+    dir: Math.random() < 0.5 ? 1 : -1,
+    wobble: Math.random() * Math.PI * 2
   });
 }
 
@@ -1678,6 +1828,19 @@ function animateBg() {
   
   // Particles
   bgParticles.forEach(p => {
+    p.pulse += 0.03;
+    if (mouse.active) {
+      const dx = p.x - mouse.x;
+      const dy = p.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      if (dist < 170) {
+        const force = (170 - dist) / 170;
+        p.vx += (dx / dist) * force * 0.035;
+        p.vy += (dy / dist) * force * 0.035;
+      }
+    }
+    p.vx *= 0.985;
+    p.vy *= 0.985;
     p.x += p.vx;
     p.y += p.vy;
     if (p.x < 0) p.x = W;
@@ -1686,14 +1849,36 @@ function animateBg() {
     if (p.y > H) p.y = 0;
     
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctx.fillStyle = p.color + '44';
+    ctx.arc(p.x, p.y, p.size + Math.sin(p.pulse) * 0.45, 0, Math.PI * 2);
+    ctx.fillStyle = p.color + (mouse.active ? '66' : '44');
     ctx.fill();
   });
+
+  if (mouse.active) {
+    const nearby = bgParticles.filter(p => Math.hypot(p.x - mouse.x, p.y - mouse.y) < 145).slice(0, 18);
+    nearby.forEach(p => {
+      const dist = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+      ctx.beginPath();
+      ctx.moveTo(mouse.x, mouse.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = `rgba(255, 201, 160, ${Math.max(0, (145 - dist) / 145) * 0.16})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+    const glow = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 90);
+    glow.addColorStop(0, 'rgba(255,122,102,0.12)');
+    glow.addColorStop(1, 'rgba(255,122,102,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 90, 0, Math.PI * 2);
+    ctx.fill();
+  }
   
   // Spaceships in background
   bgShips.forEach(ship => {
+    ship.wobble += 0.03;
     ship.x += ship.speed * ship.dir;
+    ship.y += Math.sin(ship.wobble) * 0.08;
     if (ship.x > W + 50) { ship.x = -50; ship.y = Math.random() * H; }
     if (ship.x < -50) { ship.x = W + 50; ship.y = Math.random() * H; }
     
@@ -1706,7 +1891,15 @@ function animateBg() {
     ctx.lineTo(-ship.size * 0.4, 0);
     ctx.lineTo(-ship.size * 0.5, ship.size * 0.3);
     ctx.closePath();
-    ctx.fillStyle = ship.color + '55';
+    ctx.fillStyle = ship.color + '88';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-ship.size * 0.48, 0);
+    ctx.lineTo(-ship.size * (1.05 + Math.random() * 0.45), -ship.size * 0.22);
+    ctx.lineTo(-ship.size * (0.9 + Math.random() * 0.35), 0);
+    ctx.lineTo(-ship.size * (1.05 + Math.random() * 0.45), ship.size * 0.22);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 201, 160, 0.42)';
     ctx.fill();
     ctx.restore();
   });
