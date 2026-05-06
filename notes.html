@@ -1,439 +1,425 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ENEB352 — Speaker Notes</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #1A0E1F;
-      --text: #FCEEE6;
-      --accent: #FF7A66;
-      --muted: #C9B8C3;
-      --card: #2A1A30;
-      --border: #3D2A45;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 18px;
-      line-height: 1.6;
-      overflow: hidden;
-    }
-
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      height: 100dvh;
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-      flex-shrink: 0;
-      z-index: 10;
-    }
-
-    .slide-number {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .slide-number span {
-      color: var(--muted);
-      font-size: 16px;
-      font-weight: 500;
-    }
-
-    .timer {
-      font-variant-numeric: tabular-nums;
-      font-weight: 600;
-      font-size: 18px;
-      color: var(--accent);
-      background: var(--card);
-      padding: 6px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-
-    /* Slide content */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 16px 24px;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .slide-title {
-      font-size: 24px;
-      font-weight: 700;
-      line-height: 1.3;
-      margin-bottom: 16px;
-      color: var(--text);
-    }
-
-    .notes-section {
-      margin-bottom: 20px;
-    }
-
-    .notes-section h3 {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--accent);
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    .notes-text {
-      font-size: 18px;
-      line-height: 1.65;
-      color: var(--text);
-    }
-
-    .key-points {
-      margin-top: 20px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .key-points h3 {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--accent);
-      margin-bottom: 10px;
-      font-weight: 600;
-    }
-
-    .key-points ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .key-points li {
-      position: relative;
-      padding-left: 20px;
-      margin-bottom: 8px;
-      font-size: 16px;
-      line-height: 1.5;
-      color: var(--muted);
-    }
-
-    .key-points li::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 9px;
-      width: 8px;
-      height: 8px;
-      background: var(--accent);
-      border-radius: 50%;
-    }
-
-    /* Navigation */
-    .nav {
-      display: flex;
-      gap: 12px;
-      padding: 12px 16px 20px;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-      flex-shrink: 0;
-    }
-
-    .nav-btn {
-      flex: 1;
-      height: 60px;
-      border: none;
-      border-radius: 12px;
-      background: var(--card);
-      color: var(--text);
-      font-size: 17px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: background 0.15s, transform 0.1s;
-      border: 1px solid var(--border);
-      user-select: none;
-    }
-
-    .nav-btn:active {
-      background: var(--border);
-      transform: scale(0.98);
-    }
-
-    .nav-btn.primary {
-      background: var(--accent);
-      color: var(--bg);
-      border-color: var(--accent);
-    }
-
-    .nav-btn.primary:active {
-      background: #ff9988;
-    }
-
-    .nav-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
-
-    /* Swipe hint */
-    .swipe-hint {
-      text-align: center;
-      font-size: 12px;
-      color: var(--muted);
-      padding: 4px 0 0;
-      opacity: 0.6;
-    }
-
-    /* Slide transitions */
-    .slide-view {
-      animation: fadeIn 0.2s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Scrollbar */
-    .content::-webkit-scrollbar { width: 4px; }
-    .content::-webkit-scrollbar-track { background: transparent; }
-    .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Speaker Notes — ENEB352</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --base: #1A0E1F;
+  --panel: #2D1B33;
+  --coral: #FF7A66;
+  --peach: #FFC9A0;
+  --amber: #E8A04E;
+  --ink: #FCEEE6;
+  --mute: #9B8090;
+  --dim: #4A3350;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  background: var(--base);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.header {
+  background: var(--panel);
+  border-bottom: 1px solid rgba(255,201,160,0.1);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.slide-info {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--coral);
+}
+.timer {
+  font-family: 'SF Mono', monospace;
+  font-size: 18px;
+  color: var(--amber);
+  font-weight: 700;
+}
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.slide-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  color: var(--ink);
+}
+.section {
+  margin-bottom: 24px;
+}
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--amber);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.talking-points {
+  list-style: none;
+}
+.talking-points li {
+  padding: 12px 0 12px 28px;
+  position: relative;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.talking-points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  width: 8px;
+  height: 8px;
+  background: var(--coral);
+  border-radius: 50%;
+}
+.script-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--mute);
+  font-style: italic;
+}
+.nav-bar {
+  background: var(--panel);
+  border-top: 1px solid rgba(255,201,160,0.1);
+  padding: 12px 16px;
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.nav-btn {
+  flex: 1;
+  padding: 16px;
+  background: var(--dim);
+  border: none;
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-btn:active {
+  background: var(--coral);
+}
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+.progress-dots .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+.progress-dots .dot.active {
+  background: var(--coral);
+}
+</style>
 </head>
 <body>
-  <div id="app">
-    <header class="header">
-      <div class="slide-number"><span>Slide</span> <span id="current">1</span><span>/18</span></div>
-      <div class="timer" id="timer">00:00</div>
-    </header>
-
-    <main class="content" id="content">
-      <!-- Slide content injected here -->
-    </main>
-
-    <footer class="nav">
-      <button class="nav-btn" id="prevBtn" onclick="goPrev()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        Prev
-      </button>
-      <button class="nav-btn primary" id="nextBtn" onclick="goNext()">
-        Next
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      </button>
-    </footer>
-    <div class="swipe-hint">Swipe left / right to navigate</div>
+<div class="app">
+  <div class="header">
+    <div class="slide-info" id="slide-info">Slide 1 / 18</div>
+    <div class="timer" id="timer">00:00</div>
   </div>
+  
+  <div class="content" id="content">
+    <!-- Injected by JS -->
+  </div>
+  
+  <div class="progress-dots" id="progress-dots"></div>
+  
+  <div class="nav-bar">
+    <button class="nav-btn" id="prev-btn">← Prev</button>
+    <button class="nav-btn" id="next-btn">Next →</button>
+  </div>
+</div>
 
-  <script>
-    const notes = [
-      {
-        slide: 1,
-        title: "Title Slide",
-        notes: "Hello, I'm Kian Kamali. Today I'll explain how Content Delivery Networks, or CDNs, make the web fast. This isn't just about caching files. It's about rethinking how the entire internet routes traffic, handles protocol negotiation, and delivers content to users across the globe.",
-        points: ["CDN stands for Content Delivery Network", "Topic assigned: How CDNs Make the Web Fast", "18 slides covering protocols, architecture, real systems, and improvements"]
-      },
-      {
-        slide: 2,
-        title: "The Problem",
-        notes: "The internet wasn't built for distance. When a user in Tokyo requests a website hosted in Virginia, that packet travels approximately 11,000 kilometers through fiber optic cables. At two-thirds the speed of light, that's a 70-millisecond one-way trip, 140 milliseconds round-trip. Add TCP three-way handshake at 1 RTT, TLS negotiation at 1 to 2 RTTs, server processing, and database queries, and you're looking at 300 to 500 milliseconds before the browser even receives the first byte. On mobile 3G networks, this easily exceeds one second. Research shows that every 100 milliseconds of delay reduces conversion rates by 1 percent. For Amazon, that's billions in lost revenue.",
-        points: ["Physical distance creates inherent latency", "TCP handshake + TLS = multiple RTTs", "Mobile networks amplify the problem", "Latency directly impacts business metrics"]
-      },
-      {
-        slide: 3,
-        title: "Protocols Overview",
-        notes: "CDNs don't work in isolation. They orchestrate a stack of protocols across multiple OSI layers. At the network and transport layers, we have IP Anycast, BGP for routing, TCP with BBR congestion control, and UDP for QUIC. At the application layer, DNS resolves names to IPs, HTTP delivers content, and TLS encrypts everything. Each protocol serves a specific purpose, and understanding how they interact is critical to understanding CDN performance.",
-        points: ["Layer 3: IP Anycast, BGP", "Layer 4: TCP, UDP", "Layer 5-7: DNS, HTTP/1.1, HTTP/2, HTTP/3, TLS 1.3", "Protocols work together, not in isolation"]
-      },
-      {
-        slide: 4,
-        title: "DNS and Anycast Routing",
-        notes: "The CDN journey starts with DNS. When you type example.com into your browser, the resolver queries the CDN's authoritative DNS server. Here's where it gets interesting. The CDN doesn't return a single IP address. Instead, it uses GeoDNS or Anycast routing to direct you to the nearest Point of Presence, or PoP. With Anycast, hundreds of servers worldwide share the same IP address. BGP routing protocols then direct your packet to the geographically closest server based on network topology. If a PoP goes offline, BGP automatically reroutes traffic to the next nearest location within seconds. Cloudflare operates over 300 PoPs globally. Akamai has over 4,000 edge locations. This density is what makes sub-20-millisecond response times possible.",
-        points: ["GeoDNS returns different IPs based on user location", "Anycast uses shared IPs across all PoPs", "BGP handles automatic failover", "Major CDNs: Cloudflare 300+ PoPs, Akamai 4,000+ edges"]
-      },
-      {
-        slide: 5,
-        title: "HTTP Evolution",
-        notes: "HTTP has evolved dramatically. HTTP 1.1, released in 1997, allows only six concurrent connections per domain and suffers from head-of-line blocking. One slow resource blocks everything behind it. HTTP/2, standardized in 2015, introduced multiplexing, allowing multiple requests over a single connection. But it still runs over TCP, so a single lost packet blocks all streams. HTTP/3, published as RFC 9114 in 2022, solves this by running over QUIC, which uses UDP instead of TCP. QUIC provides independent streams, so packet loss in one stream doesn't affect others. It also supports zero-RTT connection resumption, meaning repeat visitors can send data immediately without any handshake. On lossy mobile networks, HTTP/3 loads pages 30 to 50 percent faster than HTTP/2.",
-        points: ["HTTP/1.1: 6 conn limit, head-of-line blocking", "HTTP/2: Multiplexing but still TCP-blocked", "HTTP/3: QUIC over UDP, independent streams, 0-RTT", "30-50% faster on mobile/lossy networks"]
-      },
-      {
-        slide: 6,
-        title: "TLS 1.3",
-        notes: "Security adds latency. TLS 1.2 requires two full round trips for the handshake. TLS 1.3, defined in RFC 8446, reduces this to one RTT for new connections. For returning visitors, it supports zero-RTT mode, where the client sends encrypted data in the very first packet. This works because the client and server have previously negotiated session keys. The server recognizes the session and can decrypt immediately. For a cached resource at the edge, this means the user gets content effectively instantly. The trade-off is that zero-RTT lacks forward secrecy for the first packet, but for idempotent GET requests, this risk is minimal.",
-        points: ["TLS 1.2: 2 RTT handshake", "TLS 1.3: 1 RTT new, 0 RTT resumed", "Session resumption keys enable 0-RTT", "Trade-off: First packet lacks forward secrecy"]
-      },
-      {
-        slide: 7,
-        title: "Cache Hierarchy",
-        notes: "CDNs use a three-tier cache hierarchy. The edge layer sits closest to users, typically within the same metropolitan area. It serves 80 to 95 percent of all requests and has the shortest TTL, usually minutes to hours. The regional layer, sometimes called a shield, sits behind the edge and handles cache misses from multiple edge nodes. It reduces origin load by collapsing identical requests. The origin is your actual server. In a well-tuned CDN, the origin sees only 5 to 20 percent of total traffic. This tiered design means your infrastructure can handle 10 times the traffic without scaling.",
-        points: ["Edge: 80-95% of traffic, minutes-hours TTL", "Regional: Collapses misses, protects origin", "Origin: Only 5-20% of traffic", "10x traffic capacity without scaling"]
-      },
-      {
-        slide: 8,
-        title: "Cache Headers",
-        notes: "Cache behavior is controlled entirely by HTTP headers sent from the origin. The Cache-Control header is the primary mechanism. Max-age tells the CDN how many seconds to cache the resource. S-maxage overrides max-age for shared caches like CDNs, while max-age still controls the browser cache. This lets you cache content at the edge for one hour while telling the browser to cache it for 24 hours. Stale-while-revalidate is a powerful but underused directive. It tells the CDN to serve stale content while fetching fresh data in the background. Users never wait for revalidation. For static assets like JavaScript and CSS, use versioned filenames with one-year TTLs. For HTML, use short TTLs with stale-while-revalidate.",
-        points: ["Cache-Control: max-age, s-maxage, stale-while-revalidate", "ETag and Last-Modified enable conditional requests", "Static assets: versioned URLs, 1-year TTL", "HTML: short TTL with stale-while-revalidate"]
-      },
-      {
-        slide: 9,
-        title: "Cache Invalidation",
-        notes: "Cache invalidation is famously one of the two hard problems in computer science, alongside naming things and off-by-one errors. When you update content, stale versions may persist at edge locations until TTL expires. There are three primary strategies. First, the Purge API: CDN providers expose APIs to invalidate specific URLs instantly. Cloudflare propagates purges across all PoPs in 1 to 5 seconds. Second, cache busting: append content hashes to filenames, like app-dot-abc123-dot-js. When the content changes, the hash changes, and the URL changes, making old cache entries irrelevant. Third, surrogate keys: tag related content with keys, like product-123, then purge by key to invalidate thousands of URLs simultaneously. Fastly pioneered this approach.",
-        points: ["Purge API: Instant invalidation, 1-5s propagation", "Cache busting: Versioned filenames", "Surrogate keys: Tag and purge groups of URLs", "Choose strategy based on content type and update frequency"]
-      },
-      {
-        slide: 10,
-        title: "Case Study — Cloudflare",
-        notes: "Cloudflare, founded in 2009, now operates over 300 Points of Presence across 100 countries, processing 55 million HTTP requests per second at peak. They handle approximately 25 percent of all web traffic. Their key innovation is Cloudflare Workers: V8 JavaScript isolates that run at every edge location. You deploy code globally in under 30 seconds with zero cold starts. This isn't just caching anymore; it's a distributed application platform. Their R2 object storage competes with Amazon S3 at a fraction of the cost, with zero egress fees. And their network has mitigated the largest DDoS attack ever recorded: 71 million requests per second in February 2023.",
-        points: ["300+ PoPs, 55M req/s, 25% of web", "Workers: Edge compute platform", "R2: Zero-egress object storage", "DDoS mitigation at unprecedented scale"]
-      },
-      {
-        slide: 11,
-        title: "Case Study — Akamai and Fastly",
-        notes: "Cloudflare isn't the only player. Akamai, the oldest CDN founded in 1998, operates over 4,000 edge locations and dominates enterprise media delivery. They invented the CDN concept at MIT. Fastly, founded in 2011, differentiates with instant configuration propagation: changes deploy globally in 150 milliseconds. Their edge dictionaries enable real-time A/B testing at the edge. Amazon CloudFront, launched in 2008, integrates deeply with the AWS ecosystem. Netflix uses CloudFront for their control plane, though they built their own CDN, Open Connect, for video delivery. Each provider has strengths: Akamai for media, Fastly for real-time config, CloudFront for AWS integration, and Cloudflare for developer experience and pricing.",
-        points: ["Akamai: 4,000+ edges, enterprise/media focus", "Fastly: 150ms config propagation, edge dictionaries", "CloudFront: Deep AWS integration", "Netflix uses multiple CDNs including their own Open Connect"]
-      },
-      {
-        slide: 12,
-        title: "Trade-offs — Latency vs Cost",
-        notes: "CDNs aren't free, and they're not always the right choice. The primary trade-off is latency versus cost. A CDN can reduce perceived latency by 30 percent for geographically distributed users, but you pay for every gigabyte egressed from the edge. At 90 percent cache hit ratio, you save approximately 80 dollars per terabyte compared to serving from origin. But at 50 percent hit ratio, the savings diminish significantly. There's also operational complexity: managing cache invalidation logic, debugging distributed state across hundreds of PoPs, and dealing with vendor-specific APIs. For a small local business with users in one city, a CDN might add more complexity than value.",
-        points: ["30% latency reduction possible", "Cost scales with egress bandwidth", "90% cache hit ratio = $80/TB savings", "Not needed for geographically concentrated audiences"]
-      },
-      {
-        slide: 13,
-        title: "Trade-offs — Complexity",
-        notes: "Beyond cost, there are three major complexity concerns. First, the thundering herd problem: when cache expires, thousands of simultaneous requests hit the origin before the edge can re-cache. Origin shield and stale-while-revalidate mitigate this. Second, SSL termination: CDNs decrypt TLS at the edge, which means your data travels in plaintext inside the CDN's network. You're trusting the CDN as a third party. Third, vendor lock-in: edge compute platforms like Workers and VCL are proprietary. Moving to another provider requires rewriting your edge logic. Multi-CDN strategies reduce this risk but multiply operational complexity.",
-        points: ["Thundering herd: Mitigate with origin shield", "SSL termination: Trust model changes", "Vendor lock-in: Proprietary edge compute", "Multi-CDN: Reduces risk, increases complexity"]
-      },
-      {
-        slide: 14,
-        title: "Improvement 1 — Edge Compute",
-        notes: "The most exciting improvement in CDN technology is edge compute. Instead of just caching static files, you can run actual application logic at the edge. Cloudflare Workers, AWS Lambda at Edge, and Fastly Compute all enable this. The traditional model routes every dynamic request back to the origin. With edge compute, A/B testing, personalization, API aggregation, and even database queries happen within 5 milliseconds of the user. Cloudflare's D1 database and KV store are specifically designed for edge access patterns. This fundamentally changes the architecture from origin-centric to edge-first.",
-        points: ["Workers, Lambda@Edge, Fastly Compute", "A/B testing and personalization at edge", "Edge databases: D1, KV, FaunaDB", "Architecture shift: origin-centric to edge-first"]
-      },
-      {
-        slide: 15,
-        title: "Improvement 2 — HTTP/3 Adoption",
-        notes: "As of 2026, approximately 35 percent of web traffic uses HTTP/3. The holdouts are enterprise firewalls that block UDP and legacy load balancers that don't support QUIC. HTTP/3 shines brightest on mobile networks, where packet loss of 1 to 3 percent is common. On a 3 percent loss connection, HTTP/3 loads pages twice as fast as HTTP/2. For CDN providers, enabling HTTP/3 is typically a configuration toggle. For website operators, the performance gains are essentially free. My recommendation: enable HTTP/3 on your CDN immediately if you haven't already.",
-        points: ["35% adoption as of 2026", "Blockers: Enterprise firewalls, legacy load balancers", "2x faster on 3% packet loss networks", "Usually a one-click enable in CDN dashboard"]
-      },
-      {
-        slide: 16,
-        title: "Improvement 3 — Smarter Caching",
-        notes: "The third major improvement is intelligent caching. Machine learning can predict what content users will request next and prefetch it to the edge before they ask. Netflix uses this for thumbnail images. Tiered TTL automatically adjusts cache duration based on access patterns: popular content gets shorter TTLs for freshness, while cold content gets longer TTLs for efficiency. Real-time purge using WebSockets pushes invalidation events to all edge nodes instantly, eliminating the 1 to 5 second propagation delay of traditional purge APIs. The next frontier is predictive content distribution that anticipates demand before it happens.",
-        points: ["ML prefetch: Predict and pre-cache content", "Tiered TTL: Dynamic based on access patterns", "Real-time purge: WebSocket-based instant invalidation", "Future: Predictive content distribution"]
-      },
-      {
-        slide: 17,
-        title: "Summary",
-        notes: "To summarize: the problem is physical distance creating inherent latency. The solution is CDNs, which use Anycast routing, tiered caching, and modern protocols to reduce round-trip times from 200 milliseconds to 20 milliseconds. The trade-offs are cost, cache invalidation complexity, SSL trust model changes, and vendor lock-in. CDNs have evolved from simple file caches to distributed application platforms, and they're now essential infrastructure for any web application serving a global audience.",
-        points: ["Problem: Physical distance = inherent latency", "Solution: Anycast, tiered caching, modern protocols", "Trade-offs: Cost, complexity, trust, lock-in", "CDNs are now essential global infrastructure"]
-      },
-      {
-        slide: 18,
-        title: "Q&A",
-        notes: "Thank you. I'm happy to answer any questions about CDN architecture, protocol details, or specific provider implementations.",
-        points: []
-      }
-    ];
+<script>
+const notes = [
+  {
+    slide: 1,
+    title: "Title Slide",
+    points: [
+      "Introduce yourself: Kian Kamali, ENEB352",
+      "Topic: How CDNs Make the Web Fast",
+      "18 slides covering protocols, architecture, real systems",
+      "Not just caching — it's about rethinking internet routing"
+    ]
+  },
+  {
+    slide: 2,
+    title: "The Problem: Distance",
+    points: [
+      "Tokyo to Virginia: 11,000 km of fiber",
+      "70ms one-way, 140ms round-trip at 2/3 speed of light",
+      "TCP handshake (1 RTT) + TLS (1-2 RTTs) = 300-500ms total",
+      "Every 100ms delay reduces conversion by 1%"
+    ]
+  },
+  {
+    slide: 3,
+    title: "Protocol Stack",
+    points: [
+      "Layer 3-4: IP Anycast, BGP, TCP BBR, UDP/QUIC",
+      "Layer 5-7: DNS, HTTP/1.1, HTTP/2, HTTP/3, TLS 1.3",
+      "Protocols work together, not in isolation",
+      "Each serves a specific purpose in CDN performance"
+    ]
+  },
+  {
+    slide: 4,
+    title: "DNS & Anycast Routing",
+    points: [
+      "DNS doesn't return one IP — uses GeoDNS",
+      "Anycast: hundreds of servers share same IP",
+      "BGP routes to closest server, auto-failover if PoP dies",
+      "Cloudflare: 300+ PoPs | Akamai: 4,000+ edges"
+    ]
+  },
+  {
+    slide: 5,
+    title: "HTTP Evolution",
+    points: [
+      "HTTP/1.1 (1997): 6 conn limit, head-of-line blocking",
+      "HTTP/2 (2015): Multiplexing but still TCP-blocked",
+      "HTTP/3 (RFC 9114): QUIC over UDP, independent streams",
+      "HTTP/3 is 30-50% faster on lossy mobile networks"
+    ]
+  },
+  {
+    slide: 6,
+    title: "TLS 1.3: Zero RTT",
+    points: [
+      "TLS 1.2: 2 RTT handshake",
+      "TLS 1.3: 1 RTT for new, 0 RTT for resumed",
+      "Session keys enable instant encryption on repeat visits",
+      "Trade-off: First packet lacks forward secrecy"
+    ]
+  },
+  {
+    slide: 7,
+    title: "Cache Hierarchy",
+    points: [
+      "Edge cache: Serves 80-95% of requests, minutes TTL",
+      "Regional cache: Handles misses, reduces origin load",
+      "Origin: Only hit on true misses, protected by shield",
+      "Like DNS hierarchy — tiered design absorbs burst"
+    ]
+  },
+  {
+    slide: 8,
+    title: "Cache Control Headers",
+    points: [
+      "max-age: How long CDN serves without checking origin",
+      "s-maxage: CDN-specific TTL (different from browser)",
+      "stale-while-revalidate: Serve stale, fetch fresh in background",
+      "Static assets: 1 year | HTML: 5-60 min"
+    ]
+  },
+  {
+    slide: 9,
+    title: "Cache Invalidation",
+    points: [
+      "The hardest problem in CS — stale content lingers",
+      "Purge API: Invalidate URLs instantly (~30s propagation)",
+      "Cache busting: Hash in filenames (app.abc123.js)",
+      "Surrogate keys: Tag content, purge thousands at once"
+    ]
+  },
+  {
+    slide: 10,
+    title: "Cloudflare Case Study",
+    points: [
+      "300+ PoPs, 55M req/s, ~25% of web traffic",
+      "Workers: V8 isolates at every edge, no cold starts",
+      "R2 Storage: S3-compatible, zero egress fees",
+      "Mitigated 71M req/s DDoS (Feb 2023)"
+    ]
+  },
+  {
+    slide: 11,
+    title: "Akamai & Fastly",
+    points: [
+      "Akamai: 4,000+ edges, enterprise/media streaming",
+      "Fastly: 100+ edges, real-time config (150ms propagation)",
+      "CloudFront: Deep AWS integration",
+      "Each serves different use cases — no one-size-fits-all"
+    ]
+  },
+  {
+    slide: 12,
+    title: "Trade-offs: Latency vs Cost",
+    points: [
+      "Latency: 200ms → 20ms (10x improvement)",
+      "Cost: Origin drops 80-95%, but CDN egress fees apply",
+      "Complexity: Cache invalidation, SSL mgmt, vendor APIs",
+      "Energy: Edge servers consume MWs, but reduce transmission"
+    ]
+  },
+  {
+    slide: 13,
+    title: "More Trade-offs",
+    points: [
+      "Thundering herd: Cache expiry = thousands hit origin",
+      "SSL termination at edge vs end-to-end encryption",
+      "Vendor lock-in: Edge compute is proprietary",
+      "Fundamental tension: caching increases staleness"
+    ]
+  },
+  {
+    slide: 14,
+    title: "Improvement: Edge Compute",
+    points: [
+      "Run logic at edge instead of routing to origin",
+      "Cloudflare Workers (V8), Fastly Compute (WASM)",
+      "A/B testing, personalization at 5ms from user",
+      "Edge-First: User → Worker → KV → User (5-20ms)"
+    ]
+  },
+  {
+    slide: 15,
+    title: "Improvement: HTTP/3 Adoption",
+    points: [
+      "35% of web on HTTP/3 (2026)",
+      "Holdouts: Enterprise firewalls blocking UDP",
+      "3% packet loss: HTTP/3 loads 2x faster than HTTP/2",
+      "Recommendation: Enable immediately — gains are free"
+    ]
+  },
+  {
+    slide: 16,
+    title: "Improvement: Smarter Caching",
+    points: [
+      "ML prefetch: Predict next request, preload to edge",
+      "Tiered TTL: Hot = short, Cold = long, dynamic",
+      "Real-time purge: WebSocket invalidation",
+      "Next frontier: Intelligent content distribution"
+    ]
+  },
+  {
+    slide: 17,
+    title: "References",
+    points: [
+      "11 APA references including RFCs and textbooks",
+      "Key sources: Cloudflare, IETF RFCs, Kurose & Ross",
+      "RFC 9000 (QUIC), RFC 9114 (HTTP/3), RFC 8446 (TLS 1.3)",
+      "All sources verified and current as of Spring 2026"
+    ]
+  },
+  {
+    slide: 18,
+    title: "Q&A",
+    points: [
+      "Thank the audience for attention",
+      "Open floor for questions",
+      "Contact: kkamali@terpmail.umd.edu",
+      "GitHub: github.com/kkamali04"
+    ]
+  }
+];
 
-    let current = 0;
-    const total = notes.length;
+let currentSlide = 0;
+const startTime = Date.now();
 
-    function render() {
-      const slide = notes[current];
-      document.getElementById('current').textContent = slide.slide;
-      document.getElementById('prevBtn').disabled = current === 0;
-      document.getElementById('nextBtn').disabled = current === total - 1;
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+}
 
-      const pointsHtml = slide.points.length
-        ? `<div class="key-points"><h3>Key Points</h3><ul>${slide.points.map(p => `<li>${p}</li>`).join('')}</ul></div>`
-        : '';
+function updateTimer() {
+  const elapsed = Date.now() - startTime;
+  document.getElementById('timer').textContent = formatTime(elapsed);
+}
 
-      document.getElementById('content').innerHTML = `
-        <div class="slide-view">
-          <h1 class="slide-title">${slide.title}</h1>
-          <div class="notes-section">
-            <h3>Speaker Notes</h3>
-            <div class="notes-text">${slide.notes}</div>
-          </div>
-          ${pointsHtml}
-        </div>
-      `;
-    }
+function render() {
+  const note = notes[currentSlide];
+  document.getElementById('slide-info').textContent = `Slide ${note.slide} / 18`;
+  
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="slide-title">${note.title}</div>
+    <div class="section">
+      <div class="section-label">Key Talking Points</div>
+      <ul class="talking-points">
+        ${note.points.map(p => `<li>${p}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+  content.scrollTop = 0;
+  
+  // Update dots
+  const dotsContainer = document.getElementById('progress-dots');
+  dotsContainer.innerHTML = notes.map((_, i) => 
+    `<div class="dot ${i === currentSlide ? 'active' : ''}"></div>`
+  ).join('');
+}
 
-    function goNext() {
-      if (current < total - 1) { current++; render(); }
-    }
-
-    function goPrev() {
-      if (current > 0) { current--; render(); }
-    }
-
-    // Timer
-    const startTime = Date.now();
-    function updateTimer() {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-      const secs = String(elapsed % 60).padStart(2, '0');
-      document.getElementById('timer').textContent = `${mins}:${secs}`;
-    }
-    setInterval(updateTimer, 1000);
-    updateTimer();
-
-    // Swipe support
-    let touchStartX = 0;
-    let touchEndX = 0;
-    const contentEl = document.getElementById('content');
-
-    contentEl.addEventListener('touchstart', e => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    contentEl.addEventListener('touchend', e => {
-      touchEndX = e.changedTouches[0].screenX;
-      const diff = touchStartX - touchEndX;
-      if (Math.abs(diff) > 50) {
-        if (diff > 0) goNext();
-        else goPrev();
-      }
-    }, { passive: true });
-
-    // Keyboard support
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-        e.preventDefault();
-        goNext();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        goPrev();
-      }
-    });
-
-    // Initial render
+function next() {
+  if (currentSlide < notes.length - 1) {
+    currentSlide++;
     render();
-  </script>
+  }
+}
+
+function prev() {
+  if (currentSlide > 0) {
+    currentSlide--;
+    render();
+  }
+}
+
+document.getElementById('next-btn').addEventListener('click', next);
+document.getElementById('prev-btn').addEventListener('click', prev);
+
+// Swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+});
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) {
+    if (dx < 0) next();
+    else prev();
+  }
+});
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') next();
+  if (e.key === 'ArrowLeft') prev();
+});
+
+setInterval(updateTimer, 1000);
+render();
+</script>
 </body>
 </html>
