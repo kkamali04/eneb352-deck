@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How CDNs Make the Web Fast - ENEB352 Final - Kian Kamali</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+:root {
+  --base: #1A0E1F;
+  --panel: #2D1B33;
+  --coral: #FF7A66;
+  --peach: #FFC9A0;
+  --amber: #E8A04E;
+  --ink: #FCEEE6;
+  --mute: #9B8090;
+  --dim: #4A3350;
+  --line: rgba(252,238,230,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  background: var(--base);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Slide System */
+#slides-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+.slide {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 80px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100vh);
+  will-change: transform, opacity;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.slide-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1400px;
+}
+
+/* Background Canvas */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Globe */
+.globe-wrap { display: flex; align-items: center; justify-content: center; }
+.globe-svg { display: block; animation: globe-breathe 4s ease-in-out infinite alternate; }
+@keyframes globe-breathe {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.03); opacity: 1; }
+}
+.globe-ring { fill: none; stroke: rgba(255,122,102,0.3); stroke-width: 1; }
+.globe-arc {
+  fill: none;
+  stroke: var(--peach);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+}
+.globe-pop { fill: var(--amber); }
+
+/* Typography */
+.display {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: clamp(48px, 6vw, 96px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.display .word, .title .word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(20px);
+}
+.title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 500;
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 1.1;
+}
+.title .word {
+  filter: blur(4px);
+  transform: translateY(12px);
+}
+.subtitle {
+  font-weight: 300;
+  font-size: clamp(16px, 1.8vw, 22px);
+  line-height: 1.6;
+  color: var(--mute);
+  margin-top: 20px;
+  max-width: 600px;
+}
+.body-text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--ink);
+  opacity: 0.88;
+  max-width: 56ch;
+}
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.accent-text { color: var(--coral); }
+
+/* Hero */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 520px;
+  gap: 48px;
+  align-items: center;
+  min-height: 80vh;
+}
+.hero-left { display: flex; flex-direction: column; justify-content: center; }
+.hero-meta { margin-bottom: 28px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+}
+.badge .dot {
+  width: 6px; height: 6px;
+  background: var(--coral);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,122,102,0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 8px rgba(255,122,102,0); }
+}
+.hero-right {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 520px;
+}
+
+/* Layouts */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+
+/* Cards */
+.card {
+  background: var(--panel);
+  border: 1px solid rgba(255,201,160,0.14);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: inset 0 1px 0 rgba(255,201,160,0.06);
+  transition: all 0.4s ease;
+}
+.card:hover {
+  border-color: rgba(255,122,102,0.3);
+  transform: translateY(-2px);
+}
+.card-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+.card-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mute);
+}
+
+/* Protocol badges */
+.protocol-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.protocol-badge {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--peach);
+  background: rgba(255,201,160,0.05);
+}
+
+/* Stats */
+.stat-block { text-align: center; padding: 30px 16px; }
+.stat-number {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: clamp(48px, 6vw, 80px);
+  color: var(--coral);
+  line-height: 1;
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Terminal typing effect */
+.terminal {
+  background: rgba(26,14,31,0.95);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--peach);
+  overflow-x: auto;
+  min-height: 200px;
+}
+.terminal .cursor {
+  display: inline-block;
+  width: 8px; height: 16px;
+  background: var(--coral);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.terminal .comment { color: var(--dim); }
+.terminal .keyword { color: var(--coral); }
+.terminal .string { color: var(--amber); }
+.terminal .prompt { color: var(--amber); }
+
+/* Cache tiers */
+.cache-tier {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+.cache-tier:hover { border-color: var(--coral); background: rgba(255,122,102,0.05); }
+.cache-tier-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--amber);
+  min-width: 80px;
+}
+.cache-tier-desc { font-size: 14px; color: var(--mute); }
+
+/* Comparison table */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+.comparison-table th {
+  text-align: left;
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--line);
+}
+.comparison-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--mute);
+}
+
+/* Improvement cards */
+.improve-card {
+  background: linear-gradient(135deg, rgba(255,122,102,0.08), rgba(232,160,78,0.05));
+  border: 1px solid rgba(255,122,102,0.15);
+  border-radius: 14px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Navigation */
+.nav-dots {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+}
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.nav-dot.active {
+  background: var(--coral);
+  transform: scale(1.4);
+  box-shadow: 0 0 10px rgba(255,122,102,0.5);
+}
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--coral), var(--amber));
+  z-index: 1000;
+  transition: width 0.4s ease;
+}
+.slide-counter {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  z-index: 100;
+}
+.slide-counter span { color: var(--coral); }
+
+/* Animation Queue Progress Indicator */
+.queue-progress {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--mute);
+  letter-spacing: 0.1em;
+  background: rgba(26,14,31,0.8);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 14px;
+  backdrop-filter: blur(4px);
+}
+.queue-progress .queue-bar {
+  display: inline-block;
+  width: 60px;
+  height: 3px;
+  background: var(--dim);
+  border-radius: 2px;
+  margin-left: 8px;
+  vertical-align: middle;
+  overflow: hidden;
+}
+.queue-progress .queue-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--coral), var(--amber));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.queue-progress .queue-label {
+  color: var(--coral);
+}
+
+/* APA References */
+.reference-list {
+  list-style: none;
+  padding: 0;
+}
+.reference-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mute);
+  text-indent: -24px;
+  padding-left: 24px;
+}
+.reference-list li:last-child { border-bottom: none; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .slide { padding: 40px 24px; }
+  .hero-grid { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; gap: 40px; }
+  .three-col { grid-template-columns: 1fr; }
+  .nav-dots { display: none; }
+  .queue-progress { display: none; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .globe-svg { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progress-bar"></div>
+<div class="slide-counter" id="slide-counter"><span>1</span> / 18</div>
+<div class="queue-progress" id="queue-progress">
+  <span class="queue-label">Step <span id="queue-current">1</span>/<span id="queue-total">5</span></span>
+  <span class="queue-bar"><span class="queue-bar-fill" id="queue-bar-fill" style="width: 20%"></span></span>
+  <span style="color: var(--dim); margin-left: 8px;">Click or Space</span>
+</div>
+<canvas id="bg-canvas"></canvas>
+<div class="nav-dots" id="nav-dots"></div>
+<div id="slides-container">
+
+<!-- SLIDE 1: HERO -->
+<section class="slide active" id="slide-1" data-slide="1">
+  <div class="slide-content">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="hero-meta">
+          <div class="badge"><span class="dot"></span>ENEB352 - Final Research Presentation - Spring 2026</div>
+        </div>
+        <h1 class="display" id="title-1">
+          <span class="word">How</span> <span class="word">CDNs</span> <span class="word">Make</span> <span class="word">the</span> <span class="word">Web</span> <span class="word accent-text">Fast</span>
+        </h1>
+        <p class="subtitle" id="sub-1">
+          From 200ms round-trips to 20ms edge responses. The engineering behind global content delivery: DNS, Anycast, HTTP/3, and the cache hierarchy that powers the modern web.
+        </p>
+        <div class="hero-cta" style="margin-top: 32px; display: flex; gap: 16px; align-items: center;">
+          <span class="mono">Click or press Space to advance</span>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="globe-wrap">
+          <svg class="globe-svg" width="520" height="520" viewBox="-260 -260 520 520" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="globe-bg" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#3D1828" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#1A0E1F" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="limb-grad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#FFC9A0" stop-opacity="0.0"/>
+                <stop offset="30%" stop-color="#FF7A66" stop-opacity="0.9"/>
+                <stop offset="70%" stop-color="#FF7A66" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#FFC9A0" stop-opacity="0.0"/>
+              </linearGradient>
+              <filter id="pop-glow">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <clipPath id="globe-clip"><circle r="220"/></clipPath>
+            </defs>
+            <circle r="220" fill="url(#globe-bg)"/>
+            <circle r="220" fill="none" stroke="rgba(255,122,102,0.14)" stroke-width="1"/>
+            <ellipse cx="0" cy="0" rx="220" ry="70" fill="none" stroke="url(#limb-grad)" stroke-width="1.5" opacity="0.6"/>
+            <ellipse cx="0" cy="0" rx="70" ry="220" fill="none" stroke="url(#limb-grad)" stroke-width="1.5" opacity="0.6"/>
+            <ellipse cx="0" cy="0" rx="220" ry="140" fill="none" stroke="url(#limb-grad)" stroke-width="1" opacity="0.35" transform="rotate(30)"/>
+            <ellipse cx="0" cy="0" rx="140" ry="220" fill="none" stroke="url(#limb-grad)" stroke-width="1" opacity="0.35" transform="rotate(60)"/>
+            <ellipse cx="0" cy="0" rx="220" ry="35" fill="none" stroke="url(#limb-grad)" stroke-width="1" opacity="0.25" transform="rotate(-20)"/>
+            <g clip-path="url(#globe-clip)">
+              <g class="globe-arcs">
+                <path d="M60,-80 Q120,-30 140,60" fill="none" stroke="#FFC9A0" stroke-width="1.5" opacity="0.7" stroke-dasharray="200" stroke-dashoffset="200" class="globe-arc"/>
+                <path d="M-100,20 Q-20,-60 60,-80" fill="none" stroke="#FF7A66" stroke-width="2" opacity="0.85" stroke-dasharray="220" stroke-dashoffset="220" class="globe-arc"/>
+                <path d="M140,60 Q110,120 80,140" fill="none" stroke="#FFC9A0" stroke-width="1.5" opacity="0.65" stroke-dasharray="100" stroke-dashoffset="100" class="globe-arc"/>
+                <path d="M-160,-60 Q-100,-100 -40,-140" fill="none" stroke="#FF7A66" stroke-width="1.5" opacity="0.70" stroke-dasharray="160" stroke-dashoffset="160" class="globe-arc"/>
+                <circle cx="60" cy="-80" r="4" fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="140" cy="60" r="3" fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="-100" cy="20" r="3.5" fill="#E8A04E" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="80" cy="140" r="2.5" fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="-160" cy="-60" r="3" fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="-40" cy="-140" r="2.5" fill="#E8A04E" filter="url(#pop-glow)" class="globe-pop"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 2: THE PROBLEM -->
+<section class="slide" id="slide-2" data-slide="2">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">01. The Problem</div>
+    <h2 class="title" id="title-2">
+      <span class="word">The</span> <span class="word">Internet</span> <span class="word">Wasn't</span> <span class="word">Built</span> <span class="word">for</span> <span class="word accent-text">Distance</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          When a user in Tokyo requests a website hosted in Virginia, the packet travels approximately 11,000 kilometers through fiber optic cables. At two-thirds the speed of light, that is a 70ms one-way trip, 140ms round-trip.
+        </p>
+        <p class="body-text">
+          Add TCP three-way handshake (1 RTT, as covered in our TCP lab), TLS negotiation (1-2 RTTs), server processing, and database queries, and you are looking at 300-500ms before the browser receives the first byte. On mobile 3G networks, this exceeds 1 second.
+        </p>
+      </div>
+      <div class="three-col">
+        <div class="stat-block">
+          <div class="stat-number" data-count="200">0</div>
+          <div class="stat-label">ms RTT<br>Cross-continent</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-number" data-count="20">0</div>
+          <div class="stat-label">ms RTT<br>Local edge</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-number" data-count="90">0</div>
+          <div class="stat-label">% Traffic<br>Offloaded</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 3: PROTOCOLS -->
+<section class="slide" id="slide-3" data-slide="3">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">02. Protocols Involved</div>
+    <h2 class="title" id="title-3">
+      <span class="word">A</span> <span class="word">Stack</span> <span class="word">of</span> <span class="word accent-text">Protocols</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          CDNs orchestrate multiple networking protocols across the OSI stack. At the network and transport layers, we have IP Anycast, BGP for routing, TCP with BBR congestion control, and UDP for QUIC.
+        </p>
+        <p class="body-text">
+          At the application layer, DNS resolves names to IPs, HTTP delivers content, and TLS encrypts everything. As we studied in Kurose and Ross Chapter 2, these protocols work together to deliver web content efficiently.
+        </p>
+        <div class="protocol-list">
+          <span class="protocol-badge">DNS</span>
+          <span class="protocol-badge">Anycast</span>
+          <span class="protocol-badge">BGP</span>
+          <span class="protocol-badge">TCP</span>
+          <span class="protocol-badge">TLS 1.3</span>
+          <span class="protocol-badge">HTTP/1.1</span>
+          <span class="protocol-badge">HTTP/2</span>
+          <span class="protocol-badge">HTTP/3 (QUIC)</span>
+          <span class="protocol-badge">802.11 WiFi</span>
+          <span class="protocol-badge">IPv4/IPv6</span>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">Layer 3-4: Routing & Transport</div>
+          <div class="card-text">Anycast IP + BGP route users to the nearest Point of Presence. TCP BBR optimizes throughput.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Layer 5-7: Application</div>
+          <div class="card-text">HTTP/3 over QUIC eliminates head-of-line blocking. TLS 1.3 with 0-RTT cuts handshake latency to zero.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 4: DNS & ANYCAST -->
+<section class="slide" id="slide-4" data-slide="4">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">03. DNS & Anycast Routing</div>
+    <h2 class="title" id="title-4">
+      <span class="word">Finding</span> <span class="word">the</span> <span class="word accent-text">Nearest</span> <span class="word">Server</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          When you type example.com, DNS does not return one IP. CDNs use GeoDNS or Anycast to direct you to the nearest Point of Presence.
+        </p>
+        <p class="body-text">
+          Anycast means hundreds of servers share the same IP. BGP routing directs your packet to the closest server based on network topology. If a PoP fails, traffic reroutes automatically.
+        </p>
+        <div class="protocol-list">
+          <span class="protocol-badge">Cloudflare: 300+ PoPs</span>
+          <span class="protocol-badge">Akamai: 4,000+ edges</span>
+        </div>
+      </div>
+      <div class="terminal" id="terminal-4">
+        <span class="prompt">$</span> dig example.com A +short<br>
+        <span class="string">104.16.100.1</span><br><br>
+        <span class="comment"># Same IP, different physical server:</span><br>
+        <span class="comment"># Tokyo user -> Tokyo PoP (5ms)</span><br>
+        <span class="comment"># London user -> London PoP (8ms)</span><br>
+        <span class="comment"># Sydney user -> Sydney PoP (12ms)</span><br><br>
+        <span class="comment"># All hitting 104.16.100.1 via Anycast</span><span class="cursor"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 5: HTTP EVOLUTION -->
+<section class="slide" id="slide-5" data-slide="5">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">04. HTTP Evolution</div>
+    <h2 class="title" id="title-5">
+      <span class="word">HTTP/1</span> <span class="word">-></span> <span class="word">HTTP/2</span> <span class="word">-></span> <span class="word accent-text">HTTP/3</span>
+    </h2>
+    <div style="margin-top: 40px; overflow-x: auto;">
+      <table class="comparison-table">
+        <tr>
+          <th>Feature</th>
+          <th>HTTP/1.1</th>
+          <th>HTTP/2</th>
+          <th>HTTP/3 (QUIC)</th>
+        </tr>
+        <tr>
+          <td>Transport</td>
+          <td>TCP</td>
+          <td>TCP</td>
+          <td><strong style="color: var(--coral);">UDP + QUIC</strong></td>
+        </tr>
+        <tr>
+          <td>Multiplexing</td>
+          <td>No (6 conn limit)</td>
+          <td>Yes (streams)</td>
+          <td>Yes (independent)</td>
+        </tr>
+        <tr>
+          <td>Head-of-line blocking</td>
+          <td>Yes</td>
+          <td>At TCP layer</td>
+          <td><strong style="color: var(--peach);">Eliminated</strong></td>
+        </tr>
+        <tr>
+          <td>Handshake RTTs</td>
+          <td>2-3</td>
+          <td>2-3</td>
+          <td><strong style="color: var(--amber);">0-1</strong></td>
+        </tr>
+        <tr>
+          <td>Throughput (ideal)</td>
+          <td>Limited by 6 conn</td>
+          <td>High (single conn)</td>
+          <td><strong style="color: var(--peach);">Highest (no HoL)</strong></td>
+        </tr>
+        <tr>
+          <td>Connection migration</td>
+          <td>No</td>
+          <td>No</td>
+          <td><strong style="color: var(--coral);">Yes</strong></td>
+        </tr>
+      </table>
+      <p class="body-text" style="margin-top: 20px;">
+        HTTP/3 uses QUIC over UDP instead of TCP. This eliminates head-of-line blocking at the transport layer. On mobile networks with high packet loss, this cuts page load times by 30-50%.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 6: TLS 1.3 -->
+<section class="slide" id="slide-6" data-slide="6">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">05. TLS 1.3</div>
+    <h2 class="title" id="title-6">
+      <span class="word">Zero</span> <span class="word accent-text">Round-Trip</span> <span class="word">Time</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          TLS 1.3 (RFC 8446) reduces the handshake from 2 RTTs to 1 RTT for new connections, and 0-RTT for returning visitors.
+        </p>
+        <p class="body-text">
+          On repeat visits, the client sends encrypted data in the very first packet. No handshake needed. For a cached resource at the edge, this means instant delivery.
+        </p>
+        <div class="protocol-list">
+          <span class="protocol-badge">TLS 1.2: 2 RTT</span>
+          <span class="protocol-badge">TLS 1.3: 1 RTT</span>
+          <span class="protocol-badge">TLS 1.3 + 0-RTT: 0 RTT</span>
+        </div>
+      </div>
+      <div class="terminal" id="terminal-6">
+        <span class="comment"># TLS 1.3 Handshake Flow</span><br>
+        ClientHello + [early_data]<br>
+        <span class="string">    -></span><br>
+        ServerHello + EncryptedExtensions<br>
+        <span class="string">    <-</span><br>
+        {Finished}<br>
+        <span class="string">    -></span><br><br>
+        <span class="comment"># Data flows immediately after</span><br>
+        <span class="keyword"># Total: 1 RTT (or 0 with resumption)</span><span class="cursor"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 7: CACHE HIERARCHY -->
+<section class="slide" id="slide-7" data-slide="7">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">06. Cache Architecture</div>
+    <h2 class="title" id="title-7">
+      <span class="word">The</span> <span class="word">Three-Layer</span> <span class="word accent-text">Cache</span> <span class="word">Hierarchy</span>
+    </h2>
+    <div style="margin-top: 40px; max-width: 800px;">
+      <div class="cache-tier">
+        <div class="cache-tier-label">EDGE</div>
+        <div class="cache-tier-desc">Closest to users. Serves 80-95% of requests. Cache TTL: minutes to hours.</div>
+      </div>
+      <div style="color: var(--mute); font-size: 18px; margin: 6px 0 6px 40px; opacity: 0.5;">v</div>
+      <div class="cache-tier">
+        <div class="cache-tier-label">REGIONAL</div>
+        <div class="cache-tier-desc">Shared across edge nodes. Handles cache misses. Reduces origin load.</div>
+      </div>
+      <div style="color: var(--mute); font-size: 18px; margin: 6px 0 6px 40px; opacity: 0.5;">v</div>
+      <div class="cache-tier">
+        <div class="cache-tier-label">ORIGIN</div>
+        <div class="cache-tier-desc">Your actual server. Only hit on true cache misses. Protected by origin shield.</div>
+      </div>
+      <p class="body-text" style="margin-top: 24px;">
+        This tiered design, similar to the DNS hierarchy we analyzed in class, means your origin sees only 5-20% of total traffic. The edge absorbs the burst, the regional cache handles spikes, and the origin stays healthy.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 8: CACHE HEADERS -->
+<section class="slide" id="slide-8" data-slide="8">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">07. Cache Control</div>
+    <h2 class="title" id="title-8">
+      <span class="word">Cache</span> <span class="word accent-text">Headers</span> <span class="word">Control</span> <span class="word">Everything</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">Cache-Control: max-age</div>
+          <div class="card-text">How long the CDN can serve this without checking origin. Static assets: 1 year. HTML: 5-60 min.</div>
+        </div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">s-maxage vs max-age</div>
+          <div class="card-text">s-maxage controls CDN caching; max-age controls browser caching. Different values for different layers.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">stale-while-revalidate</div>
+          <div class="card-text">Serve stale content while fetching fresh in background. Users never wait for revalidation.</div>
+        </div>
+      </div>
+      <div class="terminal" id="terminal-8">
+        <span class="comment"># Optimal CDN cache headers</span><br>
+        Cache-Control: public,<br>
+        &nbsp;&nbsp;max-age=31536000,<br>
+        &nbsp;&nbsp;s-maxage=86400,<br>
+        &nbsp;&nbsp;stale-while-revalidate=3600<br><br>
+        ETag: "abc123"<br>
+        Last-Modified: Wed, 05 May 2026<br><br>
+        <span class="comment"># CDN response on cache hit:</span><br>
+        <span class="keyword">cf-cache-status: HIT</span><br>
+        <span class="comment"># On miss:</span><br>
+        <span class="string">cf-cache-status: MISS</span><span class="cursor"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 9: CACHE INVALIDATION -->
+<section class="slide" id="slide-9" data-slide="9">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">08. Cache Invalidation</div>
+    <h2 class="title" id="title-9">
+      <span class="word">The</span> <span class="word">Hardest</span> <span class="word">Problem</span> <span class="word">in</span> <span class="word accent-text">CS</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          When you update content, stale versions may linger in CDN caches worldwide until TTL expires.
+        </p>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">1. Purge API</div>
+          <div class="card-text">Call the CDN API to invalidate specific URLs instantly. Cloudflare propagates purges across all PoPs in approximately 30 seconds.</div>
+        </div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">2. Cache Busting</div>
+          <div class="card-text">Add content hash to filenames: app.abc123.js. Instant invalidation, no purge needed.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">3. Surrogate Keys</div>
+          <div class="card-text">Tag content with keys. Purge by key to invalidate thousands of URLs at once. Fastly pioneered this.</div>
+        </div>
+      </div>
+      <div class="terminal" id="terminal-9">
+        <span class="comment"># Cloudflare Purge API</span><br>
+        curl -X POST \\<br>
+        &nbsp;&nbsp;https://api.cloudflare.com/client/v4/zones/ID/purge_cache \\<br>
+        &nbsp;&nbsp;-H "Authorization: Bearer TOKEN" \\<br>
+        &nbsp;&nbsp;-d '{"files":["https://example.com/style.css"]}'<br><br>
+        <span class="comment"># Fastly Surrogate Key Purge</span><br>
+        curl -X POST \\<br>
+        &nbsp;&nbsp;https://api.fastly.com/service/ID/purge/product-123 \\<br>
+        &nbsp;&nbsp;-H "Fastly-Token: TOKEN"<span class="cursor"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 10: CLOUDFLARE -->
+<section class="slide" id="slide-10" data-slide="10">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">09. Case Study: Cloudflare</div>
+    <h2 class="title" id="title-10">
+      <span class="word">Cloudflare:</span> <span class="word accent-text">The</span> <span class="word">Network</span> <span class="word">is</span> <span class="word">the</span> <span class="word">Computer</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          Cloudflare operates 300+ Points of Presence across 100+ countries, processing 55 million HTTP requests per second. They handle approximately 25% of all web traffic.
+        </p>
+        <div class="three-col" style="margin-top: 20px;">
+          <div class="stat-block">
+            <div class="stat-number" data-count="300">0</div>
+            <div class="stat-label">PoPs</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-number" data-count="55">0</div>
+            <div class="stat-label">M req/s</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-number" data-count="25">0</div>
+            <div class="stat-label">% of Web</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">Workers</div>
+          <div class="card-text">V8 isolates running at every edge location. Deploy JavaScript globally in 30 seconds. No cold starts.</div>
+        </div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">R2 Storage</div>
+          <div class="card-text">S3-compatible object storage with zero egress fees. Competes with AWS S3 at 1/10th the cost.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">DDoS Mitigation</div>
+          <div class="card-text">Mitigated the largest attack ever: 71 million requests per second in February 2023.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 11: AKAMAI & FASTLY -->
+<section class="slide" id="slide-11" data-slide="11">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">10. Case Study: Akamai & Fastly</div>
+    <h2 class="title" id="title-11">
+      <span class="word">The</span> <span class="word accent-text">Competition</span>
+    </h2>
+    <div style="margin-top: 40px; overflow-x: auto;">
+      <table class="comparison-table">
+        <tr>
+          <th>Provider</th>
+          <th>Edge Locations</th>
+          <th>Specialty</th>
+          <th>Key Client</th>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--coral);">Akamai</strong></td>
+          <td>4,000+</td>
+          <td>Enterprise, media streaming</td>
+          <td>Apple, Adobe, Airbnb</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--coral);">Fastly</strong></td>
+          <td>100+</td>
+          <td>Real-time config, edge compute</td>
+          <td>GitHub, Stripe, Spotify</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--coral);">Cloudflare</strong></td>
+          <td>300+</td>
+          <td>Security + performance + dev tools</td>
+          <td>Discord, Zendesk, IBM</td>
+        </tr>
+        <tr>
+          <td><strong style="color: var(--coral);">AWS CloudFront</strong></td>
+          <td>450+</td>
+          <td>Deep AWS integration</td>
+          <td>Slack, Hulu, NASA</td>
+        </tr>
+      </table>
+      <p class="body-text" style="margin-top: 24px;">
+        Fastly differentiates with instant config propagation (150ms globally). Akamai dominates media delivery with Adaptive Bitrate Streaming. CloudFront integrates deeply with AWS services. Each provider serves different use cases.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 12: TRADE-OFFS LATENCY VS COST -->
+<section class="slide" id="slide-12" data-slide="12">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">11. Trade-offs: Latency vs Cost</div>
+    <h2 class="title" id="title-12">
+      <span class="word">Latency</span> <span class="word accent-text">vs</span> <span class="word">Cost</span> <span class="word">vs</span> <span class="word">Complexity</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">Latency Win</div>
+          <div class="card-text">CDNs cut latency from 200ms to 20ms, a 10x improvement. But edge compute adds cost per request.</div>
+        </div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">Cost Trade-off</div>
+          <div class="card-text">Origin bandwidth drops 80-95%, but CDN egress fees apply. At scale, multi-CDN optimizes pricing.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Complexity Tax</div>
+          <div class="card-text">Cache invalidation, SSL certificate management, and vendor-specific APIs add operational overhead.</div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom: 12px;">
+          <div class="card-title">Power & Energy</div>
+          <div class="card-text">Edge servers consume power 24/7. A global CDN uses megawatts of electricity. However, reduced origin load and shorter transmission distances can lower overall network energy consumption.</div>
+        </div>
+        <div class="terminal" id="terminal-12">
+          <span class="comment"># Cost comparison (per TB/month)</span><br>
+          Origin bandwidth:     $90/TB<br>
+          Cloudflare:           $0-5/TB<br>
+          AWS CloudFront:       $85/TB<br>
+          Fastly:               $50/TB<br><br>
+          <span class="comment"># Break-even analysis:</span><br>
+          At 90% cache hit ratio:<br>
+          <span class="keyword">  You save ~$80/TB</span><br>
+          At 50% cache hit ratio:<br>
+          <span class="string">  Savings diminish</span><span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 13: CACHE COMPLEXITY -->
+<section class="slide" id="slide-13" data-slide="13">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">12. More Trade-offs</div>
+    <h2 class="title" id="title-13">
+      <span class="word">Cache</span> <span class="word accent-text">Invalidation</span> <span class="word">Hell</span>
+    </h2>
+    <div style="margin-top: 40px;">
+      <div class="three-col">
+        <div class="card">
+          <div class="card-title" style="color: var(--coral);">Thundering Herd</div>
+          <div class="card-text">When cache expires, thousands of requests simultaneously hit the origin. Solution: origin shield + stale-while-revalidate.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--coral);">SSL Termination</div>
+          <div class="card-text">CDNs decrypt TLS at the edge. However, end-to-end encryption to origin is available (Cloudflare Full Strict, CloudFront Origin SSL). Without it, data travels in plaintext inside the CDN backbone.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--coral);">Vendor Lock-in</div>
+          <div class="card-text">Edge compute is vendor-specific. Migrating means rewriting edge logic. Multi-CDN reduces risk.</div>
+        </div>
+      </div>
+      <p class="body-text" style="margin-top: 32px; text-align: center; max-width: 700px; margin-left: auto; margin-right: auto;">
+        The fundamental tension: caching improves performance by increasing staleness. The faster your cache, the longer stale content may persist. Finding the right TTL is an art.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 14: EDGE COMPUTE -->
+<section class="slide" id="slide-14" data-slide="14">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">13. Improvement: Edge Compute</div>
+    <h2 class="title" id="title-14">
+      <span class="word">Edge</span> <span class="word accent-text">Compute:</span> <span class="word">Code</span> <span class="word">at</span> <span class="word">the</span> <span class="word">Edge</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          I would implement edge compute for dynamic content. Instead of routing every request to origin, run lightweight logic at the edge. Cloudflare Workers (V8 isolates) and Fastly Compute (WebAssembly) both enable this architecture.
+        </p>
+        <p class="body-text">
+          A/B testing, personalization, and API aggregation happen 5ms from the user, not 200ms from the origin. This is a fundamental architecture shift.
+        </p>
+        <div class="protocol-list">
+          <span class="protocol-badge">Workers (JS/WASM)</span>
+          <span class="protocol-badge">Lambda@Edge</span>
+          <span class="protocol-badge">Fastly VCL</span>
+        </div>
+      </div>
+      <div class="improve-card">
+        <div class="card-title" style="font-size: 22px; margin-bottom: 16px;">The Future: Edge-First</div>
+        <div class="card-text" style="font-size: 15px; line-height: 1.7;">
+          <p style="margin-bottom: 8px;">Traditional: User -> CDN -> Origin -> Database -> Origin -> CDN -> User</p>
+          <p style="margin-bottom: 8px; color: var(--mute);">Round-trip: 200-500ms</p>
+          <p style="margin-bottom: 8px;">Edge-First: User -> Edge Worker -> D1/KV -> User</p>
+          <p style="color: var(--coral);">Round-trip: 5-20ms</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 15: HTTP/3 -->
+<section class="slide" id="slide-15" data-slide="15">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">14. Improvement: HTTP/3</div>
+    <h2 class="title" id="title-15">
+      <span class="word">HTTP/3</span> <span class="word accent-text">Adoption</span> <span class="word">is</span> <span class="word">Critical</span>
+    </h2>
+    <div class="two-col" style="margin-top: 40px;">
+      <div>
+        <p class="body-text" style="margin-bottom: 16px;">
+          I would enable HTTP/3 immediately on all CDN properties. As of 2026, approximately 35% of web traffic uses HTTP/3. The holdouts are enterprise firewalls that block UDP and legacy load balancers.
+        </p>
+        <p class="body-text" style="margin-bottom: 16px;">
+          HTTP/3 shines on mobile networks where packet loss is common. On a 3% packet loss connection, HTTP/3 loads pages 2x faster than HTTP/2.
+        </p>
+        <div class="card">
+          <div class="card-title">Recommendation</div>
+          <div class="card-text">Enable HTTP/3 on your CDN immediately. The protocol is mature, supported by all major browsers, and the gains are free.</div>
+        </div>
+      </div>
+      <div>
+        <div class="stat-block" style="margin-bottom: 24px;">
+          <div class="stat-number" data-count="35">0</div>
+          <div class="stat-label">% of web on HTTP/3</div>
+        </div>
+        <div class="stat-block" style="margin-bottom: 24px;">
+          <div class="stat-number" data-count="2">0</div>
+          <div class="stat-label">x faster on lossy networks</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-number">0</div>
+          <div class="stat-label">RTT with 0-RTT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 16: SMARTER CACHING -->
+<section class="slide" id="slide-16" data-slide="16">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">15. Improvement: Smarter Caching</div>
+    <h2 class="title" id="title-16">
+      <span class="word">Smarter</span> <span class="word accent-text">Cache</span> <span class="word">Prediction</span>
+    </h2>
+    <div style="margin-top: 40px;">
+      <div class="three-col">
+        <div class="card">
+          <div class="card-title" style="color: var(--coral);">ML-Driven Prefetch</div>
+          <div class="card-text">Use machine learning to predict what users will request next. Prefetch to edge before they ask. Netflix uses this for thumbnails.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--coral);">Tiered TTL</div>
+          <div class="card-text">Hot content gets short TTL for freshness. Cold content gets long TTL for efficiency. Dynamically adjusted.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--coral);">Real-time Purge</div>
+          <div class="card-text">WebSocket-based invalidation. When origin updates, push purge events to all edge nodes instantly.</div>
+        </div>
+      </div>
+      <p class="body-text" style="margin-top: 32px; text-align: center; max-width: 700px; margin-left: auto; margin-right: auto;">
+        The next frontier is not just caching, but <strong style="color: var(--coral);">intelligent content distribution</strong> that anticipates demand before it happens.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 17: REFERENCES -->
+<section class="slide" id="slide-17" data-slide="17">
+  <div class="slide-content">
+    <div class="mono" style="margin-bottom: 16px;">References</div>
+    <h2 class="title" id="title-17">
+      <span class="word">APA</span> <span class="word accent-text">References</span>
+    </h2>
+    <div style="margin-top: 32px; max-width: 900px;">
+      <ul class="reference-list">
+        <li>Cloudflare. (2024). <em>How does a CDN work?</em> Cloudflare Learning Center. https://www.cloudflare.com/learning/cdn/what-is-a-cdn/</li>
+        <li>Fielding, R., & Reschke, J. (2014). <em>Hypertext Transfer Protocol (HTTP/1.1): Conditional Requests</em> (RFC 7232). IETF. https://tools.ietf.org/html/rfc7232</li>
+        <li>Kurose, J. F., & Ross, K. W. (2021). <em>Computer networking: A top-down approach</em> (8th ed.). Pearson.</li>
+        <li>Mozilla. (2024). <em>HTTP caching</em>. MDN Web Docs. https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching</li>
+        <li>Postel, J. (1981). <em>Transmission Control Protocol</em> (RFC 793). IETF. https://tools.ietf.org/html/rfc793</li>
+        <li>IETF. (2022). <em>Transmission Control Protocol (TCP)</em> (RFC 9293). IETF. https://tools.ietf.org/html/rfc9293</li>
+        <li>Rescorla, E. (2018). <em>The Transport Layer Security (TLS) Protocol Version 1.3</em> (RFC 8446). IETF. https://tools.ietf.org/html/rfc8446</li>
+        <li>Tech Interview. (2024). <em>CDN architecture: Edge caching, PoP, Anycast, cache invalidation</em>. https://www.techinterview.org/post/3233474198/</li>
+        <li>Geek Workbench. (2024). <em>CDN deep dive: Content delivery networks and edge computing</em>. https://geekworkbench.com/blog/technical/cdn-deep-dive/</li>
+        <li>Iyengar, J., & Thomson, M. (2021). <em>QUIC: A UDP-Based Multiplexed and Secure Transport</em> (RFC 9000). IETF. https://tools.ietf.org/html/rfc9000</li>
+        <li>Bishop, M. (2022). <em>HTTP/3</em> (RFC 9114). IETF. https://tools.ietf.org/html/rfc9114</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SLIDE 18: Q&A -->
+<section class="slide" id="slide-18" data-slide="18">
+  <div class="slide-content">
+    <div style="text-align: center;">
+      <div class="mono" style="margin-bottom: 20px;">Thank You</div>
+      <h1 class="display" id="title-18">
+        <span class="word">Questions</span> <span class="word accent-text">&</span> <span class="word">Answers</span>
+      </h1>
+      <p class="subtitle" style="margin: 24px auto; max-width: 500px;">
+        Kian Kamali<br>
+        ENEB352 - Introduction to Networks and Protocols<br>
+        University of Maryland, Spring 2026
+      </p>
+      <div class="protocol-list" style="justify-content: center;">
+        <span class="protocol-badge">kkamali@umd.edu</span>
+        <span class="protocol-badge">github.com/kkamali04</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+// ============================================
+// SLIDE SYSTEM WITH CLICK-TO-ADVANCE
+// ============================================
+let currentSlide = 1;
+const totalSlides = 18;
+let isAnimating = false;
+let animationQueue = [];
+let currentQueueIndex = 0;
+let visitedSlides = new Set();
+
+function initSlides() {
+  for (let i = 1; i <= totalSlides; i++) {
+    const slide = document.getElementById(`slide-${i}`);
+    if (i !== currentSlide) {
+      gsap.set(slide, { y: '100vh', opacity: 0 });
+      slide.classList.remove('active');
+    } else {
+      gsap.set(slide, { y: 0, opacity: 1 });
+      slide.classList.add('active');
+    }
+  }
+  visitedSlides.add(1);
+}
+
+function buildAnimationQueue(slideNum) {
+  const slide = document.getElementById(`slide-${slideNum}`);
+  if (!slide) return [];
+  
+  const queue = [];
+  
+  const words = slide.querySelectorAll('.title .word, .display .word');
+  if (words.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(words, 
+        { opacity: 0, filter: 'blur(8px)', y: 20 },
+        { opacity: 1, filter: 'blur(0px)', y: 0, duration: 0.55, stagger: 0.05, ease: 'power2.out' }
+      );
+    });
+  }
+  
+  const sub = slide.querySelector('.subtitle');
+  if (sub) {
+    queue.push(() => {
+      gsap.fromTo(sub, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' });
+    });
+  }
+  
+  const bodyTexts = slide.querySelectorAll('.body-text');
+  if (bodyTexts.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(bodyTexts, { opacity: 0, y: 10 }, { opacity: 0.88, y: 0, duration: 0.6, stagger: 0.15, ease: 'power2.out' });
+    });
+  }
+  
+  const cards = slide.querySelectorAll('.card');
+  if (cards.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(cards, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' });
+    });
+  }
+  
+  const stats = slide.querySelectorAll('.stat-number[data-count]');
+  if (stats.length > 0) {
+    queue.push(() => {
+      stats.forEach(stat => {
+        const target = parseInt(stat.dataset.count);
+        const obj = { val: 0 };
+        gsap.to(obj, {
+          val: target,
+          duration: 1.5,
+          ease: 'power2.out',
+          onUpdate: () => { stat.textContent = Math.round(obj.val); }
+        });
+      });
+    });
+  }
+  
+  const tiers = slide.querySelectorAll('.cache-tier');
+  if (tiers.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(tiers, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.12, ease: 'power2.out' });
+    });
+  }
+  
+  const rows = slide.querySelectorAll('.comparison-table tr');
+  if (rows.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(rows, { opacity: 0, x: -15 }, { opacity: 1, x: 0, duration: 0.4, stagger: 0.07, ease: 'power2.out' });
+    });
+  }
+  
+  const badges = slide.querySelectorAll('.protocol-badge');
+  if (badges.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(badges, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, stagger: 0.05, ease: 'back.out(1.7)' });
+    });
+  }
+  
+  const terminals = slide.querySelectorAll('.terminal');
+  if (terminals.length > 0) {
+    queue.push(() => {
+      terminals.forEach((term, i) => {
+        if (!term.dataset.typed) {
+          term.dataset.typed = 'true';
+          typeTerminal(term.id, 25);
+        }
+      });
+    });
+  }
+  
+  const refs = slide.querySelectorAll('.reference-list li');
+  if (refs.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(refs, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out' });
+    });
+  }
+  
+  return queue;
+}
+
+function updateQueueProgress() {
+  const currentEl = document.getElementById('queue-current');
+  const totalEl = document.getElementById('queue-total');
+  const barEl = document.getElementById('queue-bar-fill');
+  
+  if (currentEl && totalEl && barEl && animationQueue.length > 0) {
+    currentEl.textContent = Math.min(currentQueueIndex + 1, animationQueue.length);
+    totalEl.textContent = animationQueue.length;
+    const pct = ((currentQueueIndex) / animationQueue.length) * 100;
+    barEl.style.width = pct + '%';
+  } else if (currentEl) {
+    currentEl.textContent = '-';
+    totalEl.textContent = '-';
+    barEl.style.width = '0%';
+  }
+}
+
+function advanceAnimation() {
+  if (currentQueueIndex < animationQueue.length) {
+    animationQueue[currentQueueIndex]();
+    currentQueueIndex++;
+    updateQueueProgress();
+    return true;
+  }
+  return false;
+}
+
+function goToSlide(n) {
+  if (isAnimating || n < 1 || n > totalSlides || n === currentSlide) return;
+  isAnimating = true;
+  
+  const currentEl = document.getElementById(`slide-${currentSlide}`);
+  const nextEl = document.getElementById(`slide-${n}`);
+  const direction = n > currentSlide ? 1 : -1;
+  
+  gsap.set(nextEl, { y: direction * 100 + 'vh', opacity: 0 });
+  nextEl.classList.add('active');
+  
+  const tl = gsap.timeline({
+    onComplete: () => {
+      isAnimating = false;
+      animationQueue = buildAnimationQueue(n);
+      currentQueueIndex = 0;
+      updateQueueProgress();
+      if (!visitedSlides.has(n)) {
+        visitedSlides.add(n);
+        setTimeout(() => advanceAnimation(), 200);
+      } else {
+        showAllContent(n);
+        updateQueueProgress();
+      }
+    }
+  });
+  
+  tl.to(currentEl, {
+    y: direction * -100 + 'vh',
+    opacity: 0,
+    duration: 0.5,
+    ease: 'power2.inOut',
+    onComplete: () => { currentEl.classList.remove('active'); }
+  }, 0);
+  
+  tl.to(nextEl, {
+    y: 0,
+    opacity: 1,
+    duration: 0.6,
+    ease: 'power2.out'
+  }, 0.1);
+  
+  currentSlide = n;
+  updateNav();
+}
+
+function showAllContent(slideNum) {
+  const slide = document.getElementById(`slide-${slideNum}`);
+  if (!slide) return;
+  const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .cache-tier, .comparison-table tr, .protocol-badge, .terminal, .reference-list li');
+  allAnimated.forEach(el => {
+    gsap.set(el, { opacity: 1, y: 0, x: 0, filter: 'blur(0px)', scale: 1 });
+  });
+  const stats = slide.querySelectorAll('.stat-number[data-count]');
+  stats.forEach(stat => {
+    const target = parseInt(stat.dataset.count);
+    stat.textContent = target;
+  });
+}
+
+function nextSlide() { 
+  if (currentSlide < totalSlides) goToSlide(currentSlide + 1); 
+}
+function prevSlide() { 
+  if (currentSlide > 1) goToSlide(currentSlide - 1); 
+}
+
+function updateNav() {
+  document.getElementById('slide-counter').innerHTML = `<span>${currentSlide}</span> / ${totalSlides}`;
+  document.getElementById('progress-bar').style.width = `${(currentSlide / totalSlides) * 100}%`;
+  document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i + 1 === currentSlide);
+  });
+}
+
+// Main click handler
+document.addEventListener('click', (e) => {
+  if (isAnimating) return;
+  if (e.target.closest('.nav-dot, a, button, input, .terminal')) return;
+  if (window.getSelection().toString().length > 0) return;
+  
+  const hadAnimation = advanceAnimation();
+  if (!hadAnimation) {
+    nextSlide();
+  }
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (['ArrowDown', 'ArrowRight', ' ', 'PageDown', 'Enter'].includes(e.key)) {
+    e.preventDefault();
+    const hadAnimation = advanceAnimation();
+    if (!hadAnimation) nextSlide();
+  }
+  else if (['ArrowUp', 'ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) {
+    e.preventDefault();
+    prevSlide();
+  }
+  else if (e.key === 'Home') {
+    e.preventDefault();
+    goToSlide(1);
+  }
+  else if (e.key === 'End') {
+    e.preventDefault();
+    goToSlide(totalSlides);
+  }
+  else if (e.key >= '0' && e.key <= '9') {
+    if (!window._slideKeyBuffer) window._slideKeyBuffer = '';
+    window._slideKeyBuffer += e.key;
+    if (window._slideKeyTimeout) clearTimeout(window._slideKeyTimeout);
+    window._slideKeyTimeout = setTimeout(() => {
+      const num = parseInt(window._slideKeyBuffer);
+      if (num >= 1 && num <= totalSlides) goToSlide(num);
+      window._slideKeyBuffer = '';
+    }, 400);
+  }
+});
+
+// Nav dots
+const navDotsContainer = document.getElementById('nav-dots');
+for (let i = 1; i <= totalSlides; i++) {
+  const dot = document.createElement('div');
+  dot.className = 'nav-dot' + (i === 1 ? ' active' : '');
+  dot.addEventListener('click', () => goToSlide(i));
+  navDotsContainer.appendChild(dot);
+}
+
+// Terminal typing effect — line-by-line reveal to preserve HTML tags
+function typeTerminal(id, speed) {
+  const el = document.getElementById(id);
+  if (!el || el.dataset.typing === 'true') return;
+  el.dataset.typing = 'true';
+  const html = el.innerHTML;
+  // Split by <br> tags to get lines
+  const lines = html.split(/<br\s*\/?>/i);
+  el.innerHTML = '';
+  
+  let i = 0;
+  function typeLine() {
+    if (i < lines.length) {
+      if (i > 0) el.innerHTML += '<br>';
+      el.innerHTML += lines[i];
+      i++;
+      setTimeout(typeLine, speed * 3);
+    }
+  }
+  typeLine();
+}
+
+// ============================================
+// HERO GLOBE ARCS
+// ============================================
+function animateGlobeArcs() {
+  const arcs = document.querySelectorAll('.globe-arc');
+  arcs.forEach((arc, i) => {
+    const len = parseFloat(arc.getAttribute('stroke-dasharray')) || 200;
+    gsap.to(arc, {
+      strokeDashoffset: 0,
+      duration: 1.6,
+      delay: i * 0.5,
+      ease: 'power2.inOut',
+      repeat: -1,
+      repeatDelay: 3,
+      yoyo: true
+    });
+  });
+}
+
+// ============================================
+// BACKGROUND: PARTICLES + STARS + SPACESHIPS
+// ============================================
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, bgParticles = [], bgStars = [], bgShips = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Background particles (200)
+for (let i = 0; i < 200; i++) {
+  bgParticles.push({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    size: Math.random() * 2 + 0.5,
+    color: ['#FF7A66', '#FFC9A0', '#E8A04E', '#FCEEE6'][Math.floor(Math.random() * 4)]
+  });
+}
+
+// Stars (155)
+for (let i = 0; i < 155; i++) {
+  bgStars.push({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    size: Math.random() * 1.5 + 0.3,
+    alpha: Math.random(),
+    speed: Math.random() * 0.02 + 0.005
+  });
+}
+
+// Background spaceships
+for (let i = 0; i < 3; i++) {
+  bgShips.push({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    speed: 0.2 + Math.random() * 0.3,
+    size: 4 + Math.random() * 3,
+    color: ['#FF7A66', '#E8A04E'][Math.floor(Math.random() * 2)],
+    dir: Math.random() < 0.5 ? 1 : -1
+  });
+}
+
+function animateBg() {
+  ctx.fillStyle = '#1A0E1F';
+  ctx.fillRect(0, 0, W, H);
+  
+  // Stars
+  bgStars.forEach(star => {
+    star.alpha += star.speed;
+    const a = 0.3 + Math.abs(Math.sin(star.alpha)) * 0.7;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(252, 238, 230, ${a * 0.7})`;
+    ctx.fill();
+  });
+  
+  // Particles
+  bgParticles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = W;
+    if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H;
+    if (p.y > H) p.y = 0;
+    
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.color + '44';
+    ctx.fill();
+  });
+  
+  // Spaceships in background
+  bgShips.forEach(ship => {
+    ship.x += ship.speed * ship.dir;
+    if (ship.x > W + 50) { ship.x = -50; ship.y = Math.random() * H; }
+    if (ship.x < -50) { ship.x = W + 50; ship.y = Math.random() * H; }
+    
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.scale(ship.dir > 0 ? 1 : -1, 1);
+    ctx.beginPath();
+    ctx.moveTo(ship.size, 0);
+    ctx.lineTo(-ship.size * 0.5, -ship.size * 0.3);
+    ctx.lineTo(-ship.size * 0.4, 0);
+    ctx.lineTo(-ship.size * 0.5, ship.size * 0.3);
+    ctx.closePath();
+    ctx.fillStyle = ship.color + '55';
+    ctx.fill();
+    ctx.restore();
+  });
+  
+  requestAnimationFrame(animateBg);
+}
+
+// Initialize everything
+initSlides();
+animateGlobeArcs();
+animateBg();
+
+// Build initial animation queue for slide 1
+animationQueue = buildAnimationQueue(1);
+currentQueueIndex = 0;
+updateQueueProgress();
+setTimeout(() => advanceAnimation(), 300);
+</script>
+</body>
+</html>
