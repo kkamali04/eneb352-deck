@@ -432,7 +432,8 @@ html, body {
 .protocol-badge,
 .reference-list li,
 .stat-number,
-.stat-label {
+.stat-label,
+.terminal {
   opacity: 0;
 }
 
@@ -1316,12 +1317,10 @@ function buildAnimationQueue(slideNum) {
   const terminals = slide.querySelectorAll('.terminal');
   if (terminals.length > 0) {
     queue.push(() => {
-      terminals.forEach((term, i) => {
-        if (!term.dataset.typed) {
-          term.dataset.typed = 'true';
-          typeTerminal(term.id, 25);
-        }
-      });
+      gsap.fromTo(terminals, 
+        { opacity: 0, y: 20 }, 
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.2, ease: 'power2.out' }
+      );
     });
   }
   
@@ -1415,7 +1414,7 @@ function goToSlide(n) {
 function showAllContent(slideNum) {
   const slide = document.getElementById(`slide-${slideNum}`);
   if (!slide) return;
-  const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .comparison-table tr, .protocol-badge, .reference-list li, .stat-label');
+  const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .comparison-table tr, .protocol-badge, .reference-list li, .stat-label, .terminal');
   allAnimated.forEach(el => {
     gsap.set(el, { opacity: 1, y: 0, x: 0, filter: 'blur(0px)', scale: 1 });
   });
@@ -1561,34 +1560,44 @@ function animateGlobeArcs() {
     return parseFloat(arc.getAttribute('stroke-dasharray')) || 100;
   }
 
-  // Build a single master timeline that loops perfectly
-  const masterTl = gsap.timeline({ repeat: -1 });
+  function resetArcs() {
+    arcs.forEach(arc => {
+      gsap.set(arc, { strokeDashoffset: getDashLength(arc) });
+    });
+  }
 
-  // Phase 1 — Draw K: each arc reveals sequentially
-  arcs.forEach((arc, i) => {
-    const len = getDashLength(arc);
-    masterTl.fromTo(arc,
-      { strokeDashoffset: len },
-      { strokeDashoffset: 0, duration: 0.35, ease: 'power2.out' },
-      i * 0.2
-    );
-  });
+  function playCycle() {
+    resetArcs();
 
-  // Phase 2 — Hold: fully visible K
-  masterTl.to({}, { duration: 2.0 });
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.delayedCall(1.2, playCycle);
+      }
+    });
 
-  // Phase 3 — Undraw K: erase in reverse order
-  [...arcs].reverse().forEach((arc, i) => {
-    const len = getDashLength(arc);
-    masterTl.fromTo(arc,
-      { strokeDashoffset: 0 },
-      { strokeDashoffset: len, duration: 0.2, ease: 'power2.in' },
-      `+=${i === 0 ? 0 : 0.1}`
-    );
-  });
+    // Phase 1 — Draw K: each arc reveals sequentially
+    arcs.forEach((arc, i) => {
+      tl.to(arc, {
+        strokeDashoffset: 0,
+        duration: 0.3,
+        ease: 'power2.out'
+      }, i * 0.22);
+    });
 
-  // Phase 4 — Hold: blank sphere before next loop
-  masterTl.to({}, { duration: 1.5 });
+    // Phase 2 — Hold: fully visible K
+    tl.to({}, { duration: 1.8 });
+
+    // Phase 3 — Undraw K: erase in reverse order
+    [...arcs].reverse().forEach((arc, i) => {
+      tl.to(arc, {
+        strokeDashoffset: getDashLength(arc),
+        duration: 0.18,
+        ease: 'power2.in'
+      }, `+=${i === 0 ? 0 : 0.12}`);
+    });
+  }
+
+  playCycle();
 
   // Continuous dot pulse (staggered, independent of the draw loop)
   pops.forEach((pop, i) => {
