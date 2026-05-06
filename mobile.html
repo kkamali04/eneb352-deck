@@ -576,7 +576,7 @@ html, body {
     <div class="two-col" style="margin-top: 40px;">
       <div>
         <p class="body-text" style="margin-bottom: 16px;">
-          CDNs orchestrate multiple networking protocols across the OSI stack. At the network and transport layers, we have IP Anycast, BGP for routing, TCP with BBR congestion control, and UDP for QUIC.
+          A CDN uses several protocols together to move web content closer to the user. IP Anycast and BGP help choose the nearest edge server, while TCP, UDP, TLS, and HTTP handle the actual connection and data transfer.
         </p>
         <p class="body-text">
           At the application layer, DNS resolves names to IPs, HTTP delivers content, and TLS encrypts everything. As we studied in Kurose and Ross Chapter 2, these protocols work together to deliver web content efficiently.
@@ -624,8 +624,8 @@ html, body {
           Anycast means hundreds of servers share the same IP. BGP routing directs your packet to the closest server based on network topology. If a PoP fails, traffic reroutes automatically.
         </p>
         <div class="protocol-list">
-          <span class="protocol-badge">Cloudflare: 300+ PoPs</span>
-          <span class="protocol-badge">Akamai: 4,000+ edges</span>
+          <span class="protocol-badge">Cloudflare: hundreds of cities</span>
+          <span class="protocol-badge">Akamai: 4,400+ edge PoPs</span>
         </div>
       </div>
       <div class="terminal" id="terminal-4">
@@ -694,7 +694,7 @@ html, body {
         </tr>
       </table>
       <p class="body-text" style="margin-top: 20px;">
-        HTTP/3 uses QUIC over UDP instead of TCP. This eliminates head-of-line blocking at the transport layer. On mobile networks with high packet loss, this cuts page load times by 30-50%.
+        HTTP/3 uses QUIC over UDP instead of TCP. This helps because packet loss on one stream does not block every other stream the same way TCP can. On mobile or lossy networks, that can reduce delay and make page loading feel smoother.
       </p>
     </div>
   </div>
@@ -854,7 +854,7 @@ html, body {
     <div class="two-col" style="margin-top: 40px;">
       <div>
         <p class="body-text" style="margin-bottom: 16px;">
-          Cloudflare operates 300+ Points of Presence across 100+ countries, processing 55 million HTTP requests per second. They handle approximately 25% of all web traffic.
+          Cloudflare runs a global network across hundreds of cities in 100+ countries. The important idea is that user traffic is handled at the closest Cloudflare data center instead of being sent all the way back to the origin server.
         </p>
         <div class="three-col" style="margin-top: 20px;">
           <div class="stat-block">
@@ -878,7 +878,7 @@ html, body {
         </div>
         <div class="card" style="margin-bottom: 12px;">
           <div class="card-title">R2 Storage</div>
-          <div class="card-text">S3-compatible object storage with zero egress fees. Competes with AWS S3 at 1/10th the cost.</div>
+          <div class="card-text">R2 is S3-compatible object storage with no egress fees. It is useful when a site serves a lot of stored files through the CDN.</div>
         </div>
         <div class="card">
           <div class="card-title">DDoS Mitigation</div>
@@ -906,7 +906,7 @@ html, body {
         </tr>
         <tr>
           <td><strong style="color: var(--coral);">Akamai</strong></td>
-          <td>4,000+</td>
+          <td>4,400+</td>
           <td>Enterprise, media streaming</td>
           <td>Apple, Adobe, Airbnb</td>
         </tr>
@@ -918,7 +918,7 @@ html, body {
         </tr>
         <tr>
           <td><strong style="color: var(--coral);">Cloudflare</strong></td>
-          <td>300+</td>
+          <td>Hundreds of cities</td>
           <td>Security + performance + dev tools</td>
           <td>Discord, Zendesk, IBM</td>
         </tr>
@@ -930,7 +930,7 @@ html, body {
         </tr>
       </table>
       <p class="body-text" style="margin-top: 24px;">
-        Fastly differentiates with instant config propagation (150ms globally). Akamai dominates media delivery with Adaptive Bitrate Streaming. CloudFront integrates deeply with AWS services. Each provider serves different use cases.
+        Fastly focuses on programmable edge control and fast configuration changes. Akamai has the largest edge footprint and is strong for media delivery. CloudFront is strongest when a project is already built around AWS services.
       </p>
     </div>
   </div>
@@ -1104,7 +1104,7 @@ html, body {
         </div>
       </div>
       <p class="body-text" style="margin-top: 32px; text-align: center; max-width: 700px; margin-left: auto; margin-right: auto;">
-        The next frontier is not just caching, but <strong style="color: var(--coral);">intelligent content distribution</strong> that anticipates demand before it happens.
+        The next improvement is smarter caching that can predict likely requests and move content to the edge earlier.
       </p>
     </div>
   </div>

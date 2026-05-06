@@ -199,7 +199,7 @@ const notes = [
       "DNS doesn't return one IP — uses GeoDNS",
       "Anycast: hundreds of servers share same IP",
       "BGP routes to closest server, auto-failover if PoP dies",
-      "Cloudflare: 300+ PoPs | Akamai: 4,000+ edges"
+      "Cloudflare: hundreds of cities | Akamai: 4,400+ edge PoPs"
     ]
   },
   {
@@ -209,7 +209,7 @@ const notes = [
       "HTTP/1.1 (1997): 6 conn limit, head-of-line blocking",
       "HTTP/2 (2015): Multiplexing but still TCP-blocked",
       "HTTP/3 (RFC 9114): QUIC over UDP, independent streams",
-      "HTTP/3 is 30-50% faster on lossy mobile networks"
+      "HTTP/3 can reduce delay on lossy mobile networks because packet loss does not block every stream the same way"
     ]
   },
   {
@@ -256,7 +256,7 @@ const notes = [
     slide: 10,
     title: "Cloudflare Case Study",
     points: [
-      "300+ PoPs, 55M req/s, ~25% of web traffic",
+      "Hundreds of cities, 100+ countries, and connections to 13,000+ networks",
       "Workers: V8 isolates at every edge, no cold starts",
       "R2 Storage: S3-compatible, zero egress fees",
       "Mitigated 71M req/s DDoS (Feb 2023)"
@@ -266,8 +266,8 @@ const notes = [
     slide: 11,
     title: "Akamai & Fastly",
     points: [
-      "Akamai: 4,000+ edges, enterprise/media streaming",
-      "Fastly: 100+ edges, real-time config (150ms propagation)",
+      "Akamai: 4,400+ edge PoPs, enterprise/media streaming",
+      "Fastly: programmable edge control and fast configuration changes",
       "CloudFront: Deep AWS integration",
       "Each serves different use cases — no one-size-fits-all"
     ]
