@@ -46,11 +46,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 80px;
+  padding: 48px 64px;
   opacity: 0;
   pointer-events: none;
   transform: translateY(100vh);
   will-change: transform, opacity;
+  overflow: hidden;
 }
 .slide.active {
   opacity: 1;
@@ -61,7 +62,7 @@ html, body {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
 }
 
 /* Background Canvas */
@@ -75,6 +76,10 @@ html, body {
 
 /* Globe */
 .globe-wrap { display: flex; align-items: center; justify-content: center; }
+.globe-wrap svg {
+  width: min(480px, 42vw);
+  height: auto;
+}
 .globe-svg { display: block; animation: globe-breathe 4s ease-in-out infinite alternate; }
 @keyframes globe-breathe {
   0% { transform: scale(1); opacity: 0.9; }
@@ -143,10 +148,10 @@ html, body {
 /* Hero */
 .hero-grid {
   display: grid;
-  grid-template-columns: 1fr 520px;
-  gap: 48px;
+  grid-template-columns: 1fr 480px;
+  gap: 40px;
   align-items: center;
-  min-height: 80vh;
+  min-height: 70vh;
 }
 .hero-left { display: flex; flex-direction: column; justify-content: center; }
 .hero-meta { margin-bottom: 28px; }
@@ -328,6 +333,7 @@ html, body {
   flex-direction: column;
   gap: 10px;
   z-index: 100;
+  pointer-events: none; /* Only dots themselves catch clicks */
 }
 .nav-dot {
   width: 8px;
@@ -336,6 +342,7 @@ html, body {
   background: var(--dim);
   cursor: pointer;
   transition: all 0.3s ease;
+  pointer-events: auto;
 }
 .nav-dot.active {
   background: var(--coral);
@@ -418,12 +425,31 @@ html, body {
 /* Initially hide animated elements until triggered */
 .body-text,
 .card,
+.card-text,
 .cache-tier,
+.cache-tier-desc,
 .comparison-table tr,
 .protocol-badge,
 .reference-list li,
-.stat-number {
+.stat-number,
+.stat-label {
   opacity: 0;
+}
+
+/* Hide scrollbars globally */
+html, body, .slide, .slide-content {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .slide-content::-webkit-scrollbar {
+  display: none;
+}
+[style*="overflow-x: auto"] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+[style*="overflow-x: auto"]::-webkit-scrollbar {
+  display: none;
 }
 
 /* Responsive */
@@ -1074,7 +1100,7 @@ html, body {
           <div class="stat-label">x faster on lossy networks</div>
         </div>
         <div class="stat-block">
-          <div class="stat-number">0</div>
+          <div class="stat-number" data-count="0">0</div>
           <div class="stat-label">RTT with 0-RTT</div>
         </div>
       </div>
@@ -1150,7 +1176,7 @@ html, body {
         University of Maryland, Spring 2026
       </p>
       <div class="protocol-list" style="justify-content: center;">
-        <span class="protocol-badge">kkamali@umd.edu</span>
+        <span class="protocol-badge">kkamali@terpmail.umd.edu</span>
         <span class="protocol-badge">github.com/kkamali04</span>
       </div>
     </div>
@@ -1166,6 +1192,7 @@ html, body {
 let currentSlide = 1;
 const totalSlides = 18;
 let isAnimating = false;
+let isQueueAnimating = false;
 let animationQueue = [];
 let currentQueueIndex = 0;
 let visitedSlides = new Set();
@@ -1221,6 +1248,13 @@ function buildAnimationQueue(slideNum) {
     });
   }
   
+  const cardTexts = slide.querySelectorAll('.card-text');
+  if (cardTexts.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(cardTexts, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power2.out' });
+    });
+  }
+  
   const stats = slide.querySelectorAll('.stat-number[data-count]');
   if (stats.length > 0) {
     queue.push(() => {
@@ -1244,10 +1278,24 @@ function buildAnimationQueue(slideNum) {
     });
   }
   
+  const statLabels = slide.querySelectorAll('.stat-label');
+  if (statLabels.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(statLabels, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out' });
+    });
+  }
+  
   const tiers = slide.querySelectorAll('.cache-tier');
   if (tiers.length > 0) {
     queue.push(() => {
       gsap.fromTo(tiers, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.12, ease: 'power2.out' });
+    });
+  }
+  
+  const tierDescs = slide.querySelectorAll('.cache-tier-desc');
+  if (tierDescs.length > 0) {
+    queue.push(() => {
+      gsap.fromTo(tierDescs, { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.1, ease: 'power2.out' });
     });
   }
   
@@ -1305,10 +1353,14 @@ function updateQueueProgress() {
 }
 
 function advanceAnimation() {
+  if (isQueueAnimating) return true; // Still processing, don't advance slide
   if (currentQueueIndex < animationQueue.length) {
+    isQueueAnimating = true;
     animationQueue[currentQueueIndex]();
     currentQueueIndex++;
     updateQueueProgress();
+    // Small delay to prevent rapid-fire clicks from stacking
+    setTimeout(() => { isQueueAnimating = false; }, 400);
     return true;
   }
   return false;
@@ -1363,7 +1415,7 @@ function goToSlide(n) {
 function showAllContent(slideNum) {
   const slide = document.getElementById(`slide-${slideNum}`);
   if (!slide) return;
-  const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .cache-tier, .comparison-table tr, .protocol-badge, .reference-list li');
+  const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .comparison-table tr, .protocol-badge, .reference-list li, .stat-label');
   allAnimated.forEach(el => {
     gsap.set(el, { opacity: 1, y: 0, x: 0, filter: 'blur(0px)', scale: 1 });
   });
@@ -1371,6 +1423,7 @@ function showAllContent(slideNum) {
   stats.forEach(stat => {
     const target = parseInt(stat.dataset.count);
     stat.textContent = target;
+    gsap.set(stat, { opacity: 1 });
   });
 }
 
@@ -1451,6 +1504,21 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Mouse wheel navigation
+let wheelDebounce = false;
+document.addEventListener('wheel', (e) => {
+  if (wheelDebounce || isAnimating || isQueueAnimating) return;
+  wheelDebounce = true;
+  setTimeout(() => { wheelDebounce = false; }, 600);
+  
+  if (e.deltaY > 0) {
+    const hadAnimation = advanceAnimation();
+    if (!hadAnimation) nextSlide();
+  } else if (e.deltaY < 0) {
+    prevSlide();
+  }
+}, { passive: true });
+
 // Nav dots
 const navDotsContainer = document.getElementById('nav-dots');
 for (let i = 1; i <= totalSlides; i++) {
@@ -1493,40 +1561,34 @@ function animateGlobeArcs() {
     return parseFloat(arc.getAttribute('stroke-dasharray')) || 100;
   }
 
-  function runCycle() {
-    const tl = gsap.timeline({ onComplete: runCycle });
+  // Build a single master timeline that loops perfectly
+  const masterTl = gsap.timeline({ repeat: -1 });
 
-    // Reset all arcs to fully hidden (offset = length)
-    arcs.forEach(arc => {
-      gsap.set(arc, { strokeDashoffset: getDashLength(arc) });
-    });
+  // Phase 1 — Draw K: each arc reveals sequentially
+  arcs.forEach((arc, i) => {
+    const len = getDashLength(arc);
+    masterTl.fromTo(arc,
+      { strokeDashoffset: len },
+      { strokeDashoffset: 0, duration: 0.35, ease: 'power2.out' },
+      i * 0.2
+    );
+  });
 
-    // Phase 1 — Draw K: each arc reveals sequentially
-    arcs.forEach((arc, i) => {
-      tl.to(arc, {
-        strokeDashoffset: 0,
-        duration: 0.3,
-        ease: 'power2.out'
-      }, i * 0.22);
-    });
+  // Phase 2 — Hold: fully visible K
+  masterTl.to({}, { duration: 2.0 });
 
-    // Phase 2 — Hold: fully visible K
-    tl.to({}, { duration: 1.8 });
+  // Phase 3 — Undraw K: erase in reverse order
+  [...arcs].reverse().forEach((arc, i) => {
+    const len = getDashLength(arc);
+    masterTl.fromTo(arc,
+      { strokeDashoffset: 0 },
+      { strokeDashoffset: len, duration: 0.2, ease: 'power2.in' },
+      `+=${i === 0 ? 0 : 0.1}`
+    );
+  });
 
-    // Phase 3 — Undraw K: erase in reverse order
-    [...arcs].reverse().forEach((arc, i) => {
-      tl.to(arc, {
-        strokeDashoffset: getDashLength(arc),
-        duration: 0.18,
-        ease: 'power2.in'
-      }, `+=${i === 0 ? 0 : 0.12}`);
-    });
-
-    // Phase 4 — Hold: blank sphere
-    tl.to({}, { duration: 1.2 });
-  }
-
-  runCycle();
+  // Phase 4 — Hold: blank sphere before next loop
+  masterTl.to({}, { duration: 1.5 });
 
   // Continuous dot pulse (staggered, independent of the draw loop)
   pops.forEach((pop, i) => {
