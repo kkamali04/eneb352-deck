@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How CDNs Make the Web Fast - ENEB352 Final - Kian Kamali</title>
-<link rel="icon" href="/eneb352-deck/favicon.svg" type="image/svg+xml">
-<link rel="shortcut icon" href="/eneb352-deck/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="shortcut icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
@@ -100,6 +100,22 @@ html, body {
   filter: drop-shadow(0 0 7px rgba(255,122,102,0.55));
 }
 .globe-pop { fill: var(--amber); transform-box: fill-box; transform-origin: center; }
+.k-glow {
+  fill: none;
+  stroke: rgba(255,122,102,0.18);
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: blur(4px);
+}
+.k-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  filter: drop-shadow(0 0 10px rgba(255,122,102,0.75));
+}
 
 /* Typography */
 .display {
@@ -551,29 +567,18 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
             <ellipse cx="0" cy="0" rx="140" ry="220" fill="none" stroke="url(#limb-grad)" stroke-width="1" opacity="0.35" transform="rotate(60)"/>
             <ellipse cx="0" cy="0" rx="220" ry="35" fill="none" stroke="url(#limb-grad)" stroke-width="1" opacity="0.25" transform="rotate(-20)"/>
             <g clip-path="url(#globe-clip)">
-              <g class="globe-arcs">
-                <!-- Stem: top → junction -->
-                <path d="M-70,-130 Q-70,-65 -70,0" fill="none" stroke="#FF7A66" stroke-width="2" opacity="0.85" stroke-dasharray="135" stroke-dashoffset="135" class="globe-arc"/>
-                <!-- Stem: junction → bottom -->
-                <path d="M-70,0 Q-70,65 -70,130" fill="none" stroke="#FF7A66" stroke-width="2" opacity="0.85" stroke-dasharray="135" stroke-dashoffset="135" class="globe-arc"/>
-                <!-- Upper arm: junction → bend -->
-                <path d="M-70,0 Q-25,-45 20,-90" fill="none" stroke="#FFC9A0" stroke-width="1.5" opacity="0.7" stroke-dasharray="140" stroke-dashoffset="140" class="globe-arc"/>
-                <!-- Upper arm: bend → tip -->
-                <path d="M20,-90 Q70,-115 120,-140" fill="none" stroke="#FF7A66" stroke-width="1.5" opacity="0.75" stroke-dasharray="125" stroke-dashoffset="125" class="globe-arc"/>
-                <!-- Lower arm: junction → bend -->
-                <path d="M-70,0 Q-25,45 20,90" fill="none" stroke="#FFC9A0" stroke-width="1.5" opacity="0.7" stroke-dasharray="140" stroke-dashoffset="140" class="globe-arc"/>
-                <!-- Lower arm: bend → tip -->
-                <path d="M20,90 Q70,115 120,140" fill="none" stroke="#FF7A66" stroke-width="1.5" opacity="0.75" stroke-dasharray="125" stroke-dashoffset="125" class="globe-arc"/>
-                <!-- Dots: stem top, junction (brightest), stem bottom -->
-                <circle cx="-70" cy="-130" r="3.5" fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
-                <circle cx="-70" cy="0"     r="5"   fill="#E8A04E" filter="url(#pop-glow)" class="globe-pop"/>
-                <circle cx="-70" cy="130"   r="3.5" fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
-                <!-- Dots: upper bend, upper tip -->
-                <circle cx="20"  cy="-90"   r="3"   fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
-                <circle cx="120" cy="-140"  r="3"   fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
-                <!-- Dots: lower bend, lower tip -->
-                <circle cx="20"  cy="90"    r="3"   fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
-                <circle cx="120" cy="140"   r="3"   fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
+              <g class="k-network" aria-label="Kian K network mark">
+                <path d="M-82,-140 L-82,140" class="k-glow"/>
+                <path d="M-82,0 L96,-136" class="k-glow"/>
+                <path d="M-82,0 L96,136" class="k-glow"/>
+                <path d="M-82,-140 L-82,140" class="globe-arc k-stroke" stroke="#FF7A66" stroke-width="8"/>
+                <path d="M-82,0 L96,-136" class="globe-arc k-stroke" stroke="#FFC9A0" stroke-width="7"/>
+                <path d="M-82,0 L96,136" class="globe-arc k-stroke" stroke="#FFC9A0" stroke-width="7"/>
+                <circle cx="-82" cy="-140" r="5" fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="-82" cy="0" r="7" fill="#E8A04E" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="-82" cy="140" r="5" fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="96" cy="-136" r="5" fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="96" cy="136" r="5" fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
               </g>
             </g>
           </svg>
@@ -1373,12 +1378,9 @@ function buildAnimationQueue(slideNum) {
       stats.forEach(stat => {
         const target = parseInt(stat.dataset.count);
         const obj = { val: 0 };
+        const label = stat.closest('.stat-block')?.querySelector('.stat-label');
         // Fade in the stat container first
-        gsap.to(stat, {
-          opacity: 1,
-          duration: 0.4,
-          ease: 'power2.out'
-        });
+        gsap.to([stat, label].filter(Boolean), { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
         // Count up while fading
         gsap.to(obj, {
           val: target,
@@ -1391,7 +1393,7 @@ function buildAnimationQueue(slideNum) {
   }
   
   const statLabels = slide.querySelectorAll('.stat-label');
-  if (statLabels.length > 0) {
+  if (statLabels.length > 0 && stats.length === 0) {
     queue.push(() => {
       gsap.fromTo(statLabels, { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out' });
     });
@@ -1481,14 +1483,22 @@ function goToSlide(n) {
   const nextEl = document.getElementById(`slide-${n}`);
   const direction = n > currentSlide ? 1 : -1;
   cancelActiveAnimations(currentEl);
+  nextEl.classList.remove('active');
+  gsap.set(nextEl, { y: direction * 100 + 'vh', opacity: 0, visibility: 'hidden' });
   resetSlideAnimationState(nextEl);
   if (n === 1) animateGlobeArcs();
   
-  gsap.set(nextEl, { y: direction * 100 + 'vh', opacity: 0 });
   nextEl.classList.add('active');
+  gsap.set(nextEl, { visibility: 'visible' });
   
   const tl = gsap.timeline({
     onComplete: () => {
+      document.querySelectorAll('.slide.active').forEach(slide => {
+        if (slide !== nextEl) slide.classList.remove('active');
+      });
+      gsap.set(currentEl, { visibility: 'hidden' });
+      gsap.set(nextEl, { visibility: 'visible' });
+      resetSlideAnimationState(currentEl);
       isAnimating = false;
       animationQueue = buildAnimationQueue(n);
       currentQueueIndex = 0;
@@ -1806,11 +1816,82 @@ for (let i = 0; i < 3; i++) {
     x: Math.random() * W,
     y: Math.random() * H,
     speed: 0.38 + Math.random() * 0.52,
-    size: 10 + Math.random() * 8,
+    size: 12 + Math.random() * 9,
     color: ['#FF7A66', '#E8A04E'][Math.floor(Math.random() * 2)],
     dir: Math.random() < 0.5 ? 1 : -1,
-    wobble: Math.random() * Math.PI * 2
+    wobble: Math.random() * Math.PI * 2,
+    flame: Math.random() * 30,
+    flameCooldown: Math.random() * 120,
+    tilt: (Math.random() - 0.5) * 0.12
   });
+}
+
+function drawShip(ship) {
+  const s = ship.size;
+  ctx.save();
+  ctx.translate(ship.x, ship.y);
+  ctx.scale(ship.dir > 0 ? 1 : -1, 1);
+  ctx.rotate(Math.sin(ship.wobble) * 0.08 + ship.tilt);
+
+  const body = ctx.createLinearGradient(-s, -s * 0.45, s, s * 0.45);
+  body.addColorStop(0, 'rgba(252,238,230,0.28)');
+  body.addColorStop(0.45, ship.color + 'CC');
+  body.addColorStop(1, 'rgba(255,201,160,0.95)');
+
+  ctx.beginPath();
+  ctx.moveTo(s * 1.25, 0);
+  ctx.quadraticCurveTo(s * 0.2, -s * 0.68, -s * 0.95, -s * 0.38);
+  ctx.lineTo(-s * 0.72, 0);
+  ctx.lineTo(-s * 0.95, s * 0.38);
+  ctx.quadraticCurveTo(s * 0.2, s * 0.68, s * 1.25, 0);
+  ctx.closePath();
+  ctx.fillStyle = body;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,201,160,0.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.28, -s * 0.25);
+  ctx.lineTo(-s * 1.12, -s * 0.86);
+  ctx.lineTo(-s * 0.78, -s * 0.18);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(74,51,80,0.9)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.28, s * 0.25);
+  ctx.lineTo(-s * 1.12, s * 0.86);
+  ctx.lineTo(-s * 0.78, s * 0.18);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(74,51,80,0.9)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.ellipse(s * 0.28, -s * 0.08, s * 0.26, s * 0.16, -0.1, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(252,238,230,0.55)';
+  ctx.fill();
+
+  if (ship.flame > 0) {
+    const flameScale = 0.55 + Math.random() * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.85, 0);
+    ctx.quadraticCurveTo(-s * (1.45 + flameScale), -s * 0.34, -s * (2.0 + flameScale), 0);
+    ctx.quadraticCurveTo(-s * (1.45 + flameScale), s * 0.34, -s * 0.85, 0);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,122,102,0.42)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.85, 0);
+    ctx.quadraticCurveTo(-s * (1.22 + flameScale), -s * 0.18, -s * (1.55 + flameScale), 0);
+    ctx.quadraticCurveTo(-s * (1.22 + flameScale), s * 0.18, -s * 0.85, 0);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,201,160,0.62)';
+    ctx.fill();
+  }
+
+  ctx.restore();
 }
 
 function animateBg() {
@@ -1866,13 +1947,6 @@ function animateBg() {
       ctx.lineWidth = 1;
       ctx.stroke();
     });
-    const glow = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 90);
-    glow.addColorStop(0, 'rgba(255,122,102,0.12)');
-    glow.addColorStop(1, 'rgba(255,122,102,0)');
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, 90, 0, Math.PI * 2);
-    ctx.fill();
   }
   
   // Spaceships in background
@@ -1880,29 +1954,15 @@ function animateBg() {
     ship.wobble += 0.03;
     ship.x += ship.speed * ship.dir;
     ship.y += Math.sin(ship.wobble) * 0.08;
+    ship.flameCooldown -= 1;
+    if (ship.flameCooldown <= 0 && ship.flame <= 0) {
+      ship.flame = 18 + Math.random() * 32;
+      ship.flameCooldown = 90 + Math.random() * 180;
+    }
+    if (ship.flame > 0) ship.flame -= 1;
     if (ship.x > W + 50) { ship.x = -50; ship.y = Math.random() * H; }
     if (ship.x < -50) { ship.x = W + 50; ship.y = Math.random() * H; }
-    
-    ctx.save();
-    ctx.translate(ship.x, ship.y);
-    ctx.scale(ship.dir > 0 ? 1 : -1, 1);
-    ctx.beginPath();
-    ctx.moveTo(ship.size, 0);
-    ctx.lineTo(-ship.size * 0.5, -ship.size * 0.3);
-    ctx.lineTo(-ship.size * 0.4, 0);
-    ctx.lineTo(-ship.size * 0.5, ship.size * 0.3);
-    ctx.closePath();
-    ctx.fillStyle = ship.color + '88';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(-ship.size * 0.48, 0);
-    ctx.lineTo(-ship.size * (1.05 + Math.random() * 0.45), -ship.size * 0.22);
-    ctx.lineTo(-ship.size * (0.9 + Math.random() * 0.35), 0);
-    ctx.lineTo(-ship.size * (1.05 + Math.random() * 0.45), ship.size * 0.22);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(255, 201, 160, 0.42)';
-    ctx.fill();
-    ctx.restore();
+    drawShip(ship);
   });
   
   requestAnimationFrame(animateBg);
