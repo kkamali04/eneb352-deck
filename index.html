@@ -6,6 +6,11 @@
 <title>How CDNs Make the Web Fast - ENEB352 Final - Kian Kamali</title>
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="shortcut icon" href="./favicon.svg" type="image/svg+xml">
+<script>
+  if ((window.innerWidth <= 820 || navigator.maxTouchPoints > 0) && !location.search.includes('desktop=1')) {
+    location.replace('./notes.html');
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Bricolage+Grotesque:wght@400;500;700&display=swap" rel="stylesheet">
@@ -102,11 +107,11 @@ html, body {
 .globe-pop { fill: var(--amber); transform-box: fill-box; transform-origin: center; }
 .k-glow {
   fill: none;
-  stroke: rgba(255,122,102,0.18);
-  stroke-width: 18;
+  stroke: rgba(255,122,102,0.12);
+  stroke-width: 12;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: blur(4px);
+  filter: blur(3px);
 }
 .k-stroke {
   fill: none;
@@ -163,6 +168,10 @@ html, body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--mute);
+}
+.slide > .slide-content > .mono {
+  opacity: 0;
+  min-height: 14px;
 }
 .accent-text { color: var(--coral); }
 
@@ -328,6 +337,12 @@ html, body {
   min-width: 80px;
 }
 .cache-tier-desc { font-size: 14px; color: var(--mute); }
+.cache-arrow {
+  color: var(--mute);
+  font-size: 18px;
+  margin: 6px 0 6px 40px;
+  opacity: 0;
+}
 
 /* Comparison table */
 .comparison-table {
@@ -467,6 +482,7 @@ html, body {
 .card-text,
 .cache-tier,
 .cache-tier-desc,
+.cache-arrow,
 .comparison-table tr,
 .protocol-badge,
 .reference-list li,
@@ -804,12 +820,12 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
         <div class="cache-tier-label">EDGE</div>
         <div class="cache-tier-desc">Closest to users. Serves 80-95% of requests. Cache TTL: minutes to hours.</div>
       </div>
-      <div style="color: var(--mute); font-size: 18px; margin: 6px 0 6px 40px; opacity: 0.5;">v</div>
+      <div class="cache-arrow">v</div>
       <div class="cache-tier">
         <div class="cache-tier-label">REGIONAL</div>
         <div class="cache-tier-desc">Shared across edge nodes. Handles cache misses. Reduces origin load.</div>
       </div>
-      <div style="color: var(--mute); font-size: 18px; margin: 6px 0 6px 40px; opacity: 0.5;">v</div>
+      <div class="cache-arrow">v</div>
       <div class="cache-tier">
         <div class="cache-tier-label">ORIGIN</div>
         <div class="cache-tier-desc">Your actual server. Only hit on true cache misses. Protected by origin shield.</div>
@@ -1227,7 +1243,8 @@ let currentQueueIndex = 0;
 let visitedSlides = new Set();
 let queueTimeout = null;
 const terminalTimers = new WeakMap();
-const ANIMATED_SELECTOR = '.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .comparison-table tr, .protocol-badge, .reference-list li, .stat-number[data-count], .stat-label, .terminal';
+const metaTimers = new WeakMap();
+const ANIMATED_SELECTOR = '.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .cache-arrow, .comparison-table tr, .protocol-badge, .reference-list li, .stat-number[data-count], .stat-label, .terminal, .slide > .slide-content > .mono';
 
 function initSlides() {
   for (let i = 1; i <= totalSlides; i++) {
@@ -1252,6 +1269,52 @@ function prepareTerminal(term) {
   if (!term.dataset.originalHtml) {
     term.dataset.originalHtml = term.innerHTML;
   }
+  if (!term.dataset.reservedHeight) {
+    const height = Math.max(term.offsetHeight, term.scrollHeight, 220);
+    term.dataset.reservedHeight = String(height);
+    term.style.minHeight = height + 'px';
+  }
+}
+
+function getSlideMeta(slide) {
+  return slide?.querySelector(':scope > .slide-content > .mono') || null;
+}
+
+function prepareSlideMeta(meta) {
+  if (!meta) return;
+  if (!meta.dataset.originalText) meta.dataset.originalText = meta.textContent.trim();
+}
+
+function cancelMetaTyping(meta) {
+  if (!meta) return;
+  const timer = metaTimers.get(meta);
+  if (timer) clearTimeout(timer);
+  metaTimers.delete(meta);
+}
+
+function resetSlideMeta(meta) {
+  if (!meta) return;
+  prepareSlideMeta(meta);
+  cancelMetaTyping(meta);
+  meta.textContent = '';
+  gsap.set(meta, { opacity: 0, y: 0 });
+}
+
+function typeSlideMeta(meta, speed = 18) {
+  if (!meta) return;
+  prepareSlideMeta(meta);
+  cancelMetaTyping(meta);
+  const text = meta.dataset.originalText || '';
+  let i = 0;
+  meta.textContent = '';
+  gsap.set(meta, { opacity: 1 });
+  const tick = () => {
+    i += 1;
+    meta.textContent = text.slice(0, i);
+    if (i < text.length) metaTimers.set(meta, setTimeout(tick, speed));
+    else metaTimers.delete(meta);
+  };
+  tick();
 }
 
 function cancelTerminalTyping(slide) {
@@ -1289,7 +1352,9 @@ function killIfPresent(targets) {
 function resetSlideAnimationState(slide) {
   if (!slide) return;
   cancelTerminalTyping(slide);
+  cancelMetaTyping(getSlideMeta(slide));
   killIfPresent(slide.querySelectorAll(ANIMATED_SELECTOR));
+  resetSlideMeta(getSlideMeta(slide));
   setIfPresent(slide.querySelectorAll('.word'), { opacity: 0, filter: 'blur(8px)', y: 20 });
   setIfPresent(slide.querySelectorAll('.subtitle'), { opacity: 0, y: 15 });
   setIfPresent(slide.querySelectorAll('.body-text'), { opacity: 0, y: 10 });
@@ -1297,7 +1362,8 @@ function resetSlideAnimationState(slide) {
   setIfPresent(slide.querySelectorAll('.card-text'), { opacity: 0, y: 8 });
   setIfPresent(slide.querySelectorAll('.cache-tier'), { opacity: 0, x: -20 });
   setIfPresent(slide.querySelectorAll('.cache-tier-desc'), { opacity: 0 });
-  setIfPresent(slide.querySelectorAll('.comparison-table tr'), { opacity: 0, x: -15 });
+  setIfPresent(slide.querySelectorAll('.cache-arrow'), { opacity: 0 });
+  setIfPresent(slide.querySelectorAll('.comparison-table tr'), { opacity: 0, x: 0 });
   setIfPresent(slide.querySelectorAll('.protocol-badge'), { opacity: 0, scale: 0.8 });
   setIfPresent(slide.querySelectorAll('.reference-list li'), { opacity: 0, x: -10 });
   setIfPresent(slide.querySelectorAll('.stat-label'), { opacity: 0, y: 5 });
@@ -1315,6 +1381,7 @@ function cancelActiveAnimations(slide) {
   queueTimeout = null;
   if (!slide) return;
   cancelTerminalTyping(slide);
+  cancelMetaTyping(getSlideMeta(slide));
   gsap.killTweensOf(slide);
   killIfPresent(slide.querySelectorAll(ANIMATED_SELECTOR));
 }
@@ -1325,6 +1392,7 @@ function buildAnimationQueue(slideNum) {
   
   const queue = [];
   const terminals = Array.from(slide.querySelectorAll('.terminal'));
+  const slideMeta = getSlideMeta(slide);
   let terminalQueued = false;
   const revealTerminalsOnce = () => {
     if (terminalQueued || terminals.length === 0) return;
@@ -1335,11 +1403,14 @@ function buildAnimationQueue(slideNum) {
   const words = slide.querySelectorAll('.title .word, .display .word');
   if (words.length > 0) {
     queue.push(() => {
+      typeSlideMeta(slideMeta);
       gsap.fromTo(words, 
         { opacity: 0, filter: 'blur(8px)', y: 20 },
         { opacity: 1, filter: 'blur(0px)', y: 0, duration: 0.55, stagger: 0.05, ease: 'power2.out' }
       );
     });
+  } else if (slideMeta) {
+    queue.push(() => typeSlideMeta(slideMeta));
   }
   
   const sub = slide.querySelector('.subtitle');
@@ -1349,10 +1420,20 @@ function buildAnimationQueue(slideNum) {
     });
   }
   
+  const rows = slide.querySelectorAll('.comparison-table tr');
   const bodyTexts = slide.querySelectorAll('.body-text');
   if (bodyTexts.length > 0) {
     queue.push(() => {
       gsap.fromTo(bodyTexts, { opacity: 0, y: 10 }, { opacity: 0.88, y: 0, duration: 0.6, stagger: 0.15, ease: 'power2.out' });
+      if (rows.length > 0) {
+        gsap.fromTo(rows, { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.35, ease: 'power2.out' });
+      }
+      const bodyTiers = slide.querySelectorAll('.cache-tier');
+      if (bodyTiers.length > 0) {
+        gsap.fromTo(bodyTiers, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.12, ease: 'power2.out' });
+        gsap.to(slide.querySelectorAll('.cache-tier-desc'), { opacity: 1, duration: 0.35, stagger: 0.12, ease: 'power2.out' });
+        gsap.fromTo(slide.querySelectorAll('.cache-arrow'), { opacity: 0 }, { opacity: 0.5, duration: 0.35, stagger: 0.12, delay: 0.08, ease: 'power2.out' });
+      }
       revealTerminalsOnce();
     });
   }
@@ -1400,23 +1481,24 @@ function buildAnimationQueue(slideNum) {
   }
   
   const tiers = slide.querySelectorAll('.cache-tier');
-  if (tiers.length > 0) {
+  if (tiers.length > 0 && bodyTexts.length === 0) {
     queue.push(() => {
       gsap.fromTo(tiers, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, stagger: 0.12, ease: 'power2.out' });
+      gsap.to(slide.querySelectorAll('.cache-tier-desc'), { opacity: 1, duration: 0.35, stagger: 0.12, ease: 'power2.out' });
+      gsap.fromTo(slide.querySelectorAll('.cache-arrow'), { opacity: 0 }, { opacity: 0.5, duration: 0.35, stagger: 0.12, delay: 0.08, ease: 'power2.out' });
     });
   }
   
   const tierDescs = slide.querySelectorAll('.cache-tier-desc');
-  if (tierDescs.length > 0) {
+  if (tierDescs.length > 0 && tiers.length === 0) {
     queue.push(() => {
       gsap.fromTo(tierDescs, { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.1, ease: 'power2.out' });
     });
   }
   
-  const rows = slide.querySelectorAll('.comparison-table tr');
-  if (rows.length > 0) {
+  if (rows.length > 0 && bodyTexts.length === 0) {
     queue.push(() => {
-      gsap.fromTo(rows, { opacity: 0, x: -15 }, { opacity: 1, x: 0, duration: 0.4, stagger: 0.07, ease: 'power2.out' });
+      gsap.fromTo(rows, { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.35, ease: 'power2.out' });
     });
   }
   
@@ -1531,7 +1613,13 @@ function showAllContent(slideNum) {
   const slide = document.getElementById(`slide-${slideNum}`);
   if (!slide) return;
   cancelTerminalTyping(slide);
-  const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .comparison-table tr, .protocol-badge, .reference-list li, .stat-label, .terminal');
+  const meta = getSlideMeta(slide);
+  cancelMetaTyping(meta);
+  if (meta) {
+    prepareSlideMeta(meta);
+    meta.textContent = meta.dataset.originalText;
+  }
+  const allAnimated = slide.querySelectorAll('.word, .subtitle, .body-text, .card, .card-text, .cache-tier, .cache-tier-desc, .cache-arrow, .comparison-table tr, .protocol-badge, .reference-list li, .stat-label, .terminal, .slide > .slide-content > .mono');
   allAnimated.forEach(el => {
     gsap.set(el, { opacity: 1, y: 0, x: 0, filter: 'blur(0px)', scale: 1 });
   });
@@ -1746,17 +1834,15 @@ function animateGlobeArcs() {
   }
 
   resetArcs();
-  globeTl = gsap.timeline({ repeat: -1, repeatDelay: 0.9, defaults: { ease: 'power2.out' } });
+  globeTl = gsap.timeline({ defaults: { ease: 'power2.out' } });
   globeTl.to(pops, { scale: 1, opacity: 1, duration: 0.25, stagger: 0.04 }, 0);
   arcs.forEach((arc, i) => {
-    globeTl.to(arc, { strokeDashoffset: 0, duration: 0.34 }, 0.08 + i * 0.16);
+    globeTl.to(arc, { strokeDashoffset: 0, opacity: 1, duration: 0.34 }, 0.08 + i * 0.16);
   });
-  globeTl.to(pops, { scale: 1.25, duration: 0.35, stagger: { each: 0.04, yoyo: true, repeat: 1 } }, 1.2);
-  globeTl.to({}, { duration: 1.35 });
-  [...arcs].reverse().forEach((arc, i) => {
-    globeTl.to(arc, { strokeDashoffset: getDashLength(arc), duration: 0.22, ease: 'power2.in' }, `+=${i === 0 ? 0 : 0.04}`);
-  });
-  globeTl.to(pops, { scale: 0.75, opacity: 0.65, duration: 0.35, stagger: 0.03 }, '<');
+  globeTl.to(pops, { scale: 1.18, duration: 0.24, stagger: { each: 0.04, yoyo: true, repeat: 1 } }, 0.95);
+  globeTl.to(arcs, { opacity: 0.88, duration: 0.45, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 1.15);
+  globeTl.to(arcs, { strokeDashoffset: 0, opacity: 1, duration: 0.01 }, 1.95);
+  globeTl.to(pops, { scale: 1, opacity: 1, duration: 0.01 }, 1.95);
 }
 
 // ============================================
@@ -1811,18 +1897,20 @@ for (let i = 0; i < 155; i++) {
 }
 
 // Background spaceships
-for (let i = 0; i < 3; i++) {
+const shipColors = ['#FF7A66', '#E8A04E', '#FFC9A0', '#9B8090', '#D56DFF', '#66D9FF'];
+for (let i = 0; i < 7; i++) {
   bgShips.push({
     x: Math.random() * W,
     y: Math.random() * H,
-    speed: 0.38 + Math.random() * 0.52,
-    size: 12 + Math.random() * 9,
-    color: ['#FF7A66', '#E8A04E'][Math.floor(Math.random() * 2)],
+    speed: 0.22 + Math.random() * 0.68,
+    size: 8 + Math.random() * 20,
+    color: shipColors[Math.floor(Math.random() * shipColors.length)],
     dir: Math.random() < 0.5 ? 1 : -1,
     wobble: Math.random() * Math.PI * 2,
     flame: Math.random() * 30,
     flameCooldown: Math.random() * 120,
-    tilt: (Math.random() - 0.5) * 0.12
+    tilt: (Math.random() - 0.5) * 0.2,
+    alpha: 0.38 + Math.random() * 0.38
   });
 }
 
@@ -1834,9 +1922,9 @@ function drawShip(ship) {
   ctx.rotate(Math.sin(ship.wobble) * 0.08 + ship.tilt);
 
   const body = ctx.createLinearGradient(-s, -s * 0.45, s, s * 0.45);
-  body.addColorStop(0, 'rgba(252,238,230,0.28)');
+  body.addColorStop(0, `rgba(252,238,230,${0.18 + ship.alpha * 0.16})`);
   body.addColorStop(0.45, ship.color + 'CC');
-  body.addColorStop(1, 'rgba(255,201,160,0.95)');
+  body.addColorStop(1, `rgba(255,201,160,${0.56 + ship.alpha * 0.38})`);
 
   ctx.beginPath();
   ctx.moveTo(s * 1.25, 0);
@@ -1847,7 +1935,7 @@ function drawShip(ship) {
   ctx.closePath();
   ctx.fillStyle = body;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,201,160,0.35)';
+  ctx.strokeStyle = `rgba(255,201,160,${0.18 + ship.alpha * 0.24})`;
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -1856,7 +1944,7 @@ function drawShip(ship) {
   ctx.lineTo(-s * 1.12, -s * 0.86);
   ctx.lineTo(-s * 0.78, -s * 0.18);
   ctx.closePath();
-  ctx.fillStyle = 'rgba(74,51,80,0.9)';
+  ctx.fillStyle = `rgba(74,51,80,${0.55 + ship.alpha * 0.3})`;
   ctx.fill();
 
   ctx.beginPath();
@@ -1864,12 +1952,12 @@ function drawShip(ship) {
   ctx.lineTo(-s * 1.12, s * 0.86);
   ctx.lineTo(-s * 0.78, s * 0.18);
   ctx.closePath();
-  ctx.fillStyle = 'rgba(74,51,80,0.9)';
+  ctx.fillStyle = `rgba(74,51,80,${0.55 + ship.alpha * 0.3})`;
   ctx.fill();
 
   ctx.beginPath();
   ctx.ellipse(s * 0.28, -s * 0.08, s * 0.26, s * 0.16, -0.1, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(252,238,230,0.55)';
+  ctx.fillStyle = `rgba(252,238,230,${0.32 + ship.alpha * 0.35})`;
   ctx.fill();
 
   if (ship.flame > 0) {
