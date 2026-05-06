@@ -121,6 +121,13 @@ html, body {
   stroke-dashoffset: 300;
   filter: drop-shadow(0 0 10px rgba(255,122,102,0.75));
 }
+.k-packet {
+  fill: var(--amber);
+  opacity: 0;
+  filter: drop-shadow(0 0 8px rgba(232,160,78,0.9));
+  transform-box: fill-box;
+  transform-origin: center;
+}
 
 /* Typography */
 .display {
@@ -366,6 +373,10 @@ html, body {
   font-size: 14px;
   color: var(--mute);
 }
+.comparison-table th,
+.comparison-table td {
+  border-bottom-color: transparent;
+}
 
 /* Improvement cards */
 .improve-card {
@@ -595,6 +606,8 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
                 <circle cx="-82" cy="140" r="5" fill="#FF7A66" filter="url(#pop-glow)" class="globe-pop"/>
                 <circle cx="96" cy="-136" r="5" fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
                 <circle cx="96" cy="136" r="5" fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
+                <circle cx="-82" cy="140" r="4" class="k-packet k-packet-a"/>
+                <circle cx="96" cy="-136" r="4" class="k-packet k-packet-b"/>
               </g>
             </g>
           </svg>
@@ -1364,6 +1377,7 @@ function resetSlideAnimationState(slide) {
   setIfPresent(slide.querySelectorAll('.cache-tier-desc'), { opacity: 0 });
   setIfPresent(slide.querySelectorAll('.cache-arrow'), { opacity: 0 });
   setIfPresent(slide.querySelectorAll('.comparison-table tr'), { opacity: 0, x: 0 });
+  setIfPresent(slide.querySelectorAll('.comparison-table th, .comparison-table td'), { borderBottomColor: 'transparent' });
   setIfPresent(slide.querySelectorAll('.protocol-badge'), { opacity: 0, scale: 0.8 });
   setIfPresent(slide.querySelectorAll('.reference-list li'), { opacity: 0, x: -10 });
   setIfPresent(slide.querySelectorAll('.stat-label'), { opacity: 0, y: 5 });
@@ -1427,6 +1441,7 @@ function buildAnimationQueue(slideNum) {
       gsap.fromTo(bodyTexts, { opacity: 0, y: 10 }, { opacity: 0.88, y: 0, duration: 0.6, stagger: 0.15, ease: 'power2.out' });
       if (rows.length > 0) {
         gsap.fromTo(rows, { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.35, ease: 'power2.out' });
+        gsap.to(slide.querySelectorAll('.comparison-table th, .comparison-table td'), { borderBottomColor: 'rgba(252,238,230,0.08)', duration: 0.25, ease: 'power2.out' });
       }
       const bodyTiers = slide.querySelectorAll('.cache-tier');
       if (bodyTiers.length > 0) {
@@ -1499,6 +1514,7 @@ function buildAnimationQueue(slideNum) {
   if (rows.length > 0 && bodyTexts.length === 0) {
     queue.push(() => {
       gsap.fromTo(rows, { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.35, ease: 'power2.out' });
+      gsap.to(slide.querySelectorAll('.comparison-table th, .comparison-table td'), { borderBottomColor: 'rgba(252,238,230,0.08)', duration: 0.25, ease: 'power2.out' });
     });
   }
   
@@ -1833,16 +1849,49 @@ function animateGlobeArcs() {
     gsap.set(pops, { scale: 0.75, opacity: 0.65, transformOrigin: 'center center' });
   }
 
+  function resetPackets() {
+    gsap.set('.k-packet-a', { opacity: 0, scale: 0.85, attr: { cx: -82, cy: 140 } });
+    gsap.set('.k-packet-b', { opacity: 0, scale: 0.85, attr: { cx: 96, cy: -136 } });
+  }
+
   resetArcs();
-  globeTl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+  resetPackets();
+  const packets = Array.from(document.querySelectorAll('.k-packet'));
+  globeTl = gsap.timeline({ repeat: -1, repeatDelay: 0.4, defaults: { ease: 'power2.out' } });
+  globeTl.eventCallback('onRepeat', () => {
+    resetArcs();
+    resetPackets();
+  });
   globeTl.to(pops, { scale: 1, opacity: 1, duration: 0.25, stagger: 0.04 }, 0);
   arcs.forEach((arc, i) => {
     globeTl.to(arc, { strokeDashoffset: 0, opacity: 1, duration: 0.34 }, 0.08 + i * 0.16);
   });
-  globeTl.to(pops, { scale: 1.18, duration: 0.24, stagger: { each: 0.04, yoyo: true, repeat: 1 } }, 0.95);
-  globeTl.to(arcs, { opacity: 0.88, duration: 0.45, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 1.15);
-  globeTl.to(arcs, { strokeDashoffset: 0, opacity: 1, duration: 0.01 }, 1.95);
-  globeTl.to(pops, { scale: 1, opacity: 1, duration: 0.01 }, 1.95);
+  globeTl.to(packets, { opacity: 1, scale: 1, duration: 0.08, stagger: 0.05 }, 0.26);
+  globeTl.to('.k-packet-a', {
+    keyframes: [
+      { attr: { cx: -82, cy: 140 }, opacity: 1, duration: 0.01 },
+      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
+      { attr: { cx: 96, cy: -136 }, duration: 0.28 },
+      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
+      { attr: { cx: -82, cy: 140 }, duration: 0.24 }
+    ],
+    duration: 1.08,
+    ease: 'none'
+  }, 0.4);
+  globeTl.to('.k-packet-b', {
+    keyframes: [
+      { attr: { cx: 96, cy: -136 }, opacity: 1, duration: 0.01 },
+      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
+      { attr: { cx: -82, cy: 140 }, duration: 0.28 },
+      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
+      { attr: { cx: 96, cy: -136 }, duration: 0.24 }
+    ],
+    duration: 1.08,
+    ease: 'none'
+  }, 0.48);
+  globeTl.to(pops, { scale: 1.15, opacity: 1, duration: 0.22, stagger: { each: 0.03, yoyo: true, repeat: 1 }, ease: 'sine.inOut' }, 0.98);
+  globeTl.to(arcs, { opacity: 0.94, duration: 0.3, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 1.18);
+  globeTl.to(packets, { opacity: 0, duration: 0.12 }, 1.48);
 }
 
 // ============================================
@@ -1898,19 +1947,22 @@ for (let i = 0; i < 155; i++) {
 
 // Background spaceships
 const shipColors = ['#FF7A66', '#E8A04E', '#FFC9A0', '#9B8090', '#D56DFF', '#66D9FF'];
-for (let i = 0; i < 7; i++) {
+const shipLanes = [0.16, 0.34, 0.56, 0.78];
+for (let i = 0; i < shipLanes.length; i++) {
+  const lane = shipLanes[i];
   bgShips.push({
-    x: Math.random() * W,
-    y: Math.random() * H,
-    speed: 0.22 + Math.random() * 0.68,
-    size: 8 + Math.random() * 20,
-    color: shipColors[Math.floor(Math.random() * shipColors.length)],
+    x: (0.12 + i * 0.22) * W + (Math.random() - 0.5) * 60,
+    y: H * lane + (Math.random() - 0.5) * 28,
+    lane,
+    speed: 0.24 + Math.random() * 0.54,
+    size: 10 + Math.random() * 16,
+    color: shipColors[(i + Math.floor(Math.random() * shipColors.length)) % shipColors.length],
     dir: Math.random() < 0.5 ? 1 : -1,
     wobble: Math.random() * Math.PI * 2,
-    flame: Math.random() * 30,
-    flameCooldown: Math.random() * 120,
-    tilt: (Math.random() - 0.5) * 0.2,
-    alpha: 0.38 + Math.random() * 0.38
+    flame: Math.random() * 20,
+    flameCooldown: 80 + Math.random() * 150,
+    tilt: (Math.random() - 0.5) * 0.16,
+    alpha: 0.42 + Math.random() * 0.28
   });
 }
 
@@ -2048,8 +2100,8 @@ function animateBg() {
       ship.flameCooldown = 90 + Math.random() * 180;
     }
     if (ship.flame > 0) ship.flame -= 1;
-    if (ship.x > W + 50) { ship.x = -50; ship.y = Math.random() * H; }
-    if (ship.x < -50) { ship.x = W + 50; ship.y = Math.random() * H; }
+    if (ship.x > W + 50) { ship.x = -50; ship.y = H * ship.lane + (Math.random() - 0.5) * 28; }
+    if (ship.x < -50) { ship.x = W + 50; ship.y = H * ship.lane + (Math.random() - 0.5) * 28; }
     drawShip(ship);
   });
   

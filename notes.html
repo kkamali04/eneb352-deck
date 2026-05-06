@@ -125,6 +125,64 @@ html, body {
 .nav-btn:active {
   background: var(--coral);
 }
+.qa-btn {
+  display: none;
+}
+.qa-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,14,31,0.88);
+  backdrop-filter: blur(12px);
+  z-index: 20;
+  display: none;
+  align-items: flex-end;
+}
+.qa-modal.open { display: flex; }
+.qa-sheet {
+  width: 100%;
+  max-height: 86vh;
+  background: var(--panel);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid rgba(255,201,160,0.12);
+  padding: 20px;
+  overflow-y: auto;
+}
+.qa-sheet h2 {
+  font-size: 22px;
+  margin-bottom: 14px;
+}
+.qa-close {
+  position: sticky;
+  top: 0;
+  margin-left: auto;
+  margin-bottom: 12px;
+  display: inline-flex;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,201,160,0.16);
+  background: rgba(255,255,255,0.04);
+  color: var(--ink);
+  font-weight: 600;
+}
+.qa-group {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.qa-group:last-child { border-bottom: none; }
+.qa-q {
+  color: var(--peach);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.qa-a {
+  color: var(--ink);
+  line-height: 1.55;
+}
+@media (max-width: 820px) {
+  .qa-btn { display: block; }
+}
 .progress-dots {
   display: flex;
   justify-content: center;
@@ -158,7 +216,16 @@ html, body {
   
   <div class="nav-bar">
     <button class="nav-btn" id="prev-btn">← Prev</button>
+    <button class="nav-btn qa-btn" id="qa-btn">Q&A</button>
     <button class="nav-btn" id="next-btn">Next →</button>
+  </div>
+</div>
+
+<div class="qa-modal" id="qa-modal" aria-hidden="true">
+  <div class="qa-sheet" role="dialog" aria-modal="true" aria-labelledby="qa-title">
+    <button class="qa-close" id="qa-close">Close</button>
+    <h2 id="qa-title">Slide Questions & Answers</h2>
+    <div id="qa-content"></div>
   </div>
 </div>
 
@@ -346,6 +413,55 @@ const notes = [
   }
 ];
 
+const qaBank = [
+  { slide: 1, q: 'What is a CDN?', a: 'A CDN is a network of edge servers that deliver content from locations closer to users.' },
+  { slide: 2, q: 'Why does distance matter so much?', a: 'Every extra round trip adds delay before the page can even start loading.' },
+  { slide: 3, q: 'Why do protocols matter if caching already helps?', a: 'CDNs improve routing, transport, encryption, and delivery together.' },
+  { slide: 4, q: 'How does Anycast pick the nearest server?', a: 'Multiple PoPs share one IP, and BGP routes traffic to the closest healthy path.' },
+  { slide: 5, q: 'Why is HTTP/3 better on bad networks?', a: 'QUIC keeps streams independent, so packet loss does not stall everything.' },
+  { slide: 6, q: 'What does TLS 1.3 save?', a: 'It reduces handshake round trips and makes repeat visits faster.' },
+  { slide: 7, q: 'Why use edge, regional, and origin layers?', a: 'The layers absorb traffic step by step so the origin stays protected.' },
+  { slide: 8, q: 'Why not cache everything forever?', a: 'Content changes, so cache headers control freshness and user experience.' },
+  { slide: 9, q: 'Why is invalidation hard?', a: 'Because one change can affect many cached copies across many PoPs.' },
+  { slide: 10, q: 'What makes Cloudflare a good case study?', a: 'It combines CDN delivery, edge compute, storage, and security at scale.' },
+  { slide: 11, q: 'Why compare Akamai, Fastly, and CloudFront?', a: 'Each provider emphasizes different strengths, so there is no one best CDN.' },
+  { slide: 12, q: 'What is the biggest trade-off with CDNs?', a: 'You trade lower latency for added cost and more operational complexity.' },
+  { slide: 13, q: 'What is the main risk of edge caching and edge compute?', a: 'Staleness, security trust, and vendor lock-in all increase with distribution.' },
+  { slide: 14, q: 'Why move logic to the edge?', a: 'So simple dynamic tasks happen near users instead of going back to origin.' },
+  { slide: 15, q: 'Should everyone enable HTTP/3?', a: 'Yes, if the CDN and client support it, because the gain is usually easy to get.' },
+  { slide: 16, q: 'What does smarter caching mean?', a: 'Predicting demand, tuning TTLs, and invalidating in real time instead of waiting.' },
+  { slide: 17, q: 'Why is the reference slide important?', a: 'It shows the talk is grounded in standards and current sources.' },
+  { slide: 18, q: 'What is the one sentence takeaway?', a: 'CDNs make the web fast by shortening distance, reducing round trips, and moving work closer to users.' },
+  { slide: 'Final', q: 'What is a CDN in plain English?', a: 'A distributed set of servers that gets content closer to the user.' },
+  { slide: 'Final', q: 'Why not just use one bigger server?', a: 'Because physical distance and regional congestion still create delay.' },
+  { slide: 'Final', q: 'What is Anycast?', a: 'Many servers advertise the same IP address, and routing sends users to the nearest healthy one.' },
+  { slide: 'Final', q: 'What problem does HTTP/3 solve?', a: 'It reduces head-of-line blocking by using QUIC over UDP with independent streams.' },
+  { slide: 'Final', q: 'What is the hardest CDN problem?', a: 'Cache invalidation.' },
+  { slide: 'Final', q: 'Why are edge compute platforms important?', a: 'They let you run logic near users instead of sending every request back to origin.' }
+];
+
+function renderQA() {
+  const content = document.getElementById('qa-content');
+  content.innerHTML = qaBank.map(item => `
+    <div class="qa-group">
+      <div class="qa-q">Slide ${item.slide}: ${item.q}</div>
+      <div class="qa-a">${item.a}</div>
+    </div>
+  `).join('');
+}
+
+function openQA() {
+  const modal = document.getElementById('qa-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeQA() {
+  const modal = document.getElementById('qa-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
 let currentSlide = 0;
 const startTime = Date.now();
 
@@ -400,6 +516,9 @@ function prev() {
 
 document.getElementById('next-btn').addEventListener('click', next);
 document.getElementById('prev-btn').addEventListener('click', prev);
+document.getElementById('qa-btn').addEventListener('click', () => { renderQA(); openQA(); });
+document.getElementById('qa-close').addEventListener('click', closeQA);
+document.getElementById('qa-modal').addEventListener('click', (e) => { if (e.target.id === 'qa-modal') closeQA(); });
 
 // Swipe support
 let touchStartX = 0;
