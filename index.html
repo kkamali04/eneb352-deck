@@ -608,6 +608,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .slide::-webkit-scrollbar, .sl
                 <circle cx="96" cy="136" r="5" fill="#FFC9A0" filter="url(#pop-glow)" class="globe-pop"/>
                 <circle cx="-82" cy="140" r="4" class="k-packet k-packet-a"/>
                 <circle cx="96" cy="-136" r="4" class="k-packet k-packet-b"/>
+                <circle cx="-82" cy="0" r="4" class="k-packet k-packet-c"/>
               </g>
             </g>
           </svg>
@@ -1828,11 +1829,13 @@ function stopGlobeArcs() {
   globeTl = null;
   gsap.killTweensOf('.globe-arc');
   gsap.killTweensOf('.globe-pop');
+  gsap.killTweensOf('.k-packet');
 }
 
 function animateGlobeArcs() {
   const arcs = Array.from(document.querySelectorAll('.globe-arc'));
   const pops = Array.from(document.querySelectorAll('.globe-pop'));
+  const packetNodes = Array.from(document.querySelectorAll('.k-packet'));
   if (arcs.length === 0) return;
   stopGlobeArcs();
 
@@ -1852,46 +1855,45 @@ function animateGlobeArcs() {
   function resetPackets() {
     gsap.set('.k-packet-a', { opacity: 0, scale: 0.85, attr: { cx: -82, cy: 140 } });
     gsap.set('.k-packet-b', { opacity: 0, scale: 0.85, attr: { cx: 96, cy: -136 } });
+    gsap.set('.k-packet-c', { opacity: 0, scale: 0.85, attr: { cx: -82, cy: 0 } });
   }
 
   resetArcs();
   resetPackets();
-  const packets = Array.from(document.querySelectorAll('.k-packet'));
-  globeTl = gsap.timeline({ repeat: -1, repeatDelay: 0.4, defaults: { ease: 'power2.out' } });
-  globeTl.eventCallback('onRepeat', () => {
-    resetArcs();
-    resetPackets();
+  gsap.to(pops, { scale: 1, opacity: 1, duration: 0.35, stagger: 0.04, ease: 'power2.out' });
+
+  const packetConfigs = [
+    { node: packetNodes[0], arc: arcs[0], duration: 4.8, delay: 0.0 },
+    { node: packetNodes[1], arc: arcs[1], duration: 5.6, delay: 0.5 },
+    { node: packetNodes[2], arc: arcs[2], duration: 5.6, delay: 1.0 },
+  ].filter(cfg => cfg.node && cfg.arc);
+
+  packetConfigs.forEach(({ node, arc, duration, delay }) => {
+    const len = getDashLength(arc);
+    const state = { progress: 0 };
+    const updateNode = () => {
+      const p = arc.getPointAtLength(len * state.progress);
+      gsap.set(node, { attr: { cx: p.x, cy: p.y }, opacity: 1, scale: 1 });
+    };
+    updateNode();
+    gsap.to(arc, {
+      strokeDashoffset: 0,
+      duration: duration / 2,
+      delay,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut'
+    });
+    gsap.to(state, {
+      progress: 1,
+      duration,
+      delay,
+      repeat: -1,
+      yoyo: true,
+      ease: 'none',
+      onUpdate: updateNode
+    });
   });
-  globeTl.to(pops, { scale: 1, opacity: 1, duration: 0.25, stagger: 0.04 }, 0);
-  arcs.forEach((arc, i) => {
-    globeTl.to(arc, { strokeDashoffset: 0, opacity: 1, duration: 0.34 }, 0.08 + i * 0.16);
-  });
-  globeTl.to(packets, { opacity: 1, scale: 1, duration: 0.08, stagger: 0.05 }, 0.26);
-  globeTl.to('.k-packet-a', {
-    keyframes: [
-      { attr: { cx: -82, cy: 140 }, opacity: 1, duration: 0.01 },
-      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
-      { attr: { cx: 96, cy: -136 }, duration: 0.28 },
-      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
-      { attr: { cx: -82, cy: 140 }, duration: 0.24 }
-    ],
-    duration: 1.08,
-    ease: 'none'
-  }, 0.4);
-  globeTl.to('.k-packet-b', {
-    keyframes: [
-      { attr: { cx: 96, cy: -136 }, opacity: 1, duration: 0.01 },
-      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
-      { attr: { cx: -82, cy: 140 }, duration: 0.28 },
-      { attr: { cx: -82, cy: 0 }, duration: 0.28 },
-      { attr: { cx: 96, cy: -136 }, duration: 0.24 }
-    ],
-    duration: 1.08,
-    ease: 'none'
-  }, 0.48);
-  globeTl.to(pops, { scale: 1.15, opacity: 1, duration: 0.22, stagger: { each: 0.03, yoyo: true, repeat: 1 }, ease: 'sine.inOut' }, 0.98);
-  globeTl.to(arcs, { opacity: 0.94, duration: 0.3, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 1.18);
-  globeTl.to(packets, { opacity: 0, duration: 0.12 }, 1.48);
 }
 
 // ============================================
